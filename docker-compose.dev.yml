@@ -1,0 +1,51 @@
+version: '3.8'
+
+services:
+  web:
+    build: .
+    container_name: aibook_web_dev
+    command: >
+      sh -c "python manage.py migrate &&
+             python manage.py runserver 0.0.0.0:8000"
+    volumes:
+      - .:/app
+    ports:
+      - "8000:8000"
+    environment:
+      - DJANGO_ENV=local
+      - DEBUG=True
+      - SECRET_KEY=dev-secret-key
+    depends_on:
+      - db
+      - redis
+    networks:
+      - aibook_network
+
+  db:
+    image: postgres:15
+    container_name: aibook_db_dev
+    volumes:
+      - postgres_data_dev:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=aibook
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    ports:
+      - "5432:5432"
+    networks:
+      - aibook_network
+
+  redis:
+    image: redis:7-alpine
+    container_name: aibook_redis_dev
+    ports:
+      - "6379:6379"
+    networks:
+      - aibook_network
+
+volumes:
+  postgres_data_dev:
+
+networks:
+  aibook_network:
+    driver: bridge
