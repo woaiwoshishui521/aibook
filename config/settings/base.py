@@ -137,14 +137,6 @@ REST_FRAMEWORK = {
     ],
     'DEFAULT_PAGINATION_CLASS': 'apps.core.pagination.StandardPagination',
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
-    'DEFAULT_THROTTLE_CLASSES': [
-        'rest_framework.throttling.AnonRateThrottle',
-        'rest_framework.throttling.UserRateThrottle'
-    ],
-    'DEFAULT_THROTTLE_RATES': {
-        'anon': '100/day',
-        'user': '1000/day'
-    },
     'EXCEPTION_HANDLER': 'apps.core.exceptions.custom_exception_handler',
 }
 
@@ -163,6 +155,20 @@ CORS_ALLOWED_ORIGINS = [
 ]
 
 CORS_ALLOW_CREDENTIALS = True
+
+# Celery Configuration
+CELERY_BROKER_URL = env('CELERY_BROKER_URL', default='redis://:yungee@yungee.cn:6379/0')
+CELERY_RESULT_BACKEND = env('CELERY_RESULT_BACKEND', default='redis://:yungee@yungee.cn:6379/0')
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TIMEZONE = TIME_ZONE
+CELERY_TASK_TRACK_STARTED = True
+CELERY_TASK_TIME_LIMIT = 30 * 60  # 30 minutes
+CELERY_WORKER_CONCURRENCY = 2  # 限制并发数为2，避免资源耗尽
+CELERY_WORKER_MAX_TASKS_PER_CHILD = 10  # 每个worker处理10个任务后重启，防止内存泄漏
+
+
 
 
 

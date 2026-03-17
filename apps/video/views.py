@@ -9,8 +9,7 @@ from apps.video.serializers import (
     VideoCompressionTaskSerializer,
     VideoCompressionTaskCreateSerializer
 )
-from apps.video.services import VideoCompressionService
-import threading
+from apps.video.tasks import process_video_compression_task
 import os
 
 
@@ -27,21 +26,13 @@ class VideoCompressionTaskViewSet(viewsets.ModelViewSet):
         return VideoCompressionTaskSerializer
 
     def create(self, request, *args, **kwargs):
-        """创建压缩任务并开始处理"""
+        """创建压缩任务并提交到 Celery 队列"""
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         task = serializer.save()
 
-        # 在后台线程中处理压缩任务
-        def process_task():
-            try:
-                VideoCompressionService.process_compression_task(task)
-            except Exception as e:
-                print(f"压缩任务失败: {str(e)}")
-
-        thread = threading.Thread(target=process_task)
-        thread.daemon = True
-        thread.start()
+        # 使用 Celery 异步处理压缩任务
+        process_video_compression_task.delay(task.id)
 
         # 返回任务信息
         response_serializer = VideoCompressionTaskSerializer(task)
@@ -129,16 +120,8 @@ class VideoCompressionTaskViewSet(viewsets.ModelViewSet):
         task.error_message = None
         task.save()
 
-        # 在后台线程中处理压缩任务
-        def process_task():
-            try:
-                VideoCompressionService.process_compression_task(task)
-            except Exception as e:
-                print(f"压缩任务失败: {str(e)}")
-
-        thread = threading.Thread(target=process_task)
-        thread.daemon = True
-        thread.start()
+        # 使用 Celery 异步处理压缩任务
+        process_video_compression_task.delay(task.id)
 
         serializer = self.get_serializer(task)
         return Response(serializer.data)
@@ -200,6 +183,9 @@ class VideoCompressionTaskViewSet(viewsets.ModelViewSet):
 def video_compression_page(request):
     """视频压缩页面"""
     return render(request, 'video/compression.html')
+
+
+
 
 
 
