@@ -11,6 +11,7 @@ from apps.video.serializers import (
 )
 from apps.video.services import VideoCompressionService
 import threading
+import os
 
 
 class VideoCompressionTaskViewSet(viewsets.ModelViewSet):
@@ -128,9 +129,34 @@ class VideoCompressionTaskViewSet(viewsets.ModelViewSet):
             'total_saved_mb': total_saved_mb,
         })
 
+    def destroy(self, request, *args, **kwargs):
+        """删除任务及其关联的视频文件"""
+        task = self.get_object()
+
+        # 删除原始视频文件
+        if task.original_video:
+            try:
+                if os.path.isfile(task.original_video.path):
+                    os.remove(task.original_video.path)
+            except Exception as e:
+                print(f"删除原始视频文件失败: {str(e)}")
+
+        # 删除压缩后的视频文件
+        if task.compressed_video:
+            try:
+                if os.path.isfile(task.compressed_video.path):
+                    os.remove(task.compressed_video.path)
+            except Exception as e:
+                print(f"删除压缩视频文件失败: {str(e)}")
+
+        # 删除数据库记录
+        return super().destroy(request, *args, **kwargs)
+
 
 def video_compression_page(request):
     """视频压缩页面"""
     return render(request, 'video/compression.html')
+
+
 
 
