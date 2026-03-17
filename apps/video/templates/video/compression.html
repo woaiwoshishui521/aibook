@@ -449,13 +449,21 @@
         .video-modal-body {
             padding: 0;
             background: #000;
+            position: relative;
+            width: 100%;
+            /* 设置固定的16:9宽高比 */
+            padding-top: 56.25%; /* 9/16 = 0.5625 */
+            min-height: 400px;
         }
 
         .video-modal video {
+            position: absolute;
+            top: 0;
+            left: 0;
             width: 100%;
-            height: auto;
-            max-height: 80vh;
+            height: 100%;
             display: block;
+            object-fit: contain; /* 保持视频比例，不裁剪 */
         }
 
         @keyframes fadeIn {
@@ -1048,10 +1056,10 @@
                                 <span style="color: #666;">更新时间：</span>
                                 <strong style="color: #333;">${formatDateTime(task.updated_at)}</strong>
                             </div>
-                            ${task.completed_at ? `
+                            ${task.status === 'completed' ? `
                                 <div style="grid-column: 1 / -1;">
-                                    <span style="color: #666;">完成时间：</span>
-                                    <strong style="color: #10b981;">${formatDateTime(task.completed_at)}</strong>
+                                    <span style="color: #666;">压缩耗时：</span>
+                                    <strong style="color: #10b981;">${calculateDuration(task.created_at, task.updated_at)}</strong>
                                 </div>
                             ` : ''}
                         </div>
@@ -1263,6 +1271,41 @@
             return `${year}-${month}-${day} ${hour}:${minute}`;
         }
 
+        // 计算时长（从开始到结束的耗时）
+        function calculateDuration(startTimeStr, endTimeStr) {
+            if (!startTimeStr || !endTimeStr) return '-';
+            
+            const startTime = new Date(startTimeStr);
+            const endTime = new Date(endTimeStr);
+            const diffMs = endTime - startTime;
+            
+            if (diffMs < 0) return '-';
+            
+            const seconds = Math.floor(diffMs / 1000);
+            const minutes = Math.floor(seconds / 60);
+            const hours = Math.floor(minutes / 60);
+            const days = Math.floor(hours / 24);
+            
+            if (days > 0) {
+                const remainHours = hours % 24;
+                const remainMinutes = minutes % 60;
+                return `${days}天 ${remainHours}小时 ${remainMinutes}分钟`;
+            }
+            
+            if (hours > 0) {
+                const remainMinutes = minutes % 60;
+                const remainSeconds = seconds % 60;
+                return `${hours}小时 ${remainMinutes}分钟 ${remainSeconds}秒`;
+            }
+            
+            if (minutes > 0) {
+                const remainSeconds = seconds % 60;
+                return `${minutes}分钟 ${remainSeconds}秒`;
+            }
+            
+            return `${seconds}秒`;
+        }
+
         // 页面卸载时清除定时器
         window.addEventListener('beforeunload', () => {
             if (refreshInterval) {
@@ -1272,6 +1315,9 @@
     </script>
 </body>
 </html>
+
+
+
 
 
 
