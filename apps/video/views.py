@@ -68,6 +68,28 @@ class VideoCompressionTaskViewSet(viewsets.ModelViewSet):
         except Exception as e:
             raise Http404("文件不存在")
 
+    @action(detail=True, methods=['get'])
+    def stream(self, request, pk=None):
+        """流式播放压缩后的视频"""
+        task = self.get_object()
+
+        if task.status != 'completed' or not task.compressed_video:
+            return Response(
+                {'error': '视频还未压缩完成或压缩失败'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            response = FileResponse(
+                task.compressed_video.open('rb'),
+                content_type='video/mp4'
+            )
+            # 不设置 Content-Disposition 以便在浏览器中直接播放
+            response['Accept-Ranges'] = 'bytes'
+            return response
+        except Exception as e:
+            raise Http404("文件不存在")
+
     @action(detail=True, methods=['post'])
     def retry(self, request, pk=None):
         """重试失败的任务"""
@@ -156,6 +178,7 @@ class VideoCompressionTaskViewSet(viewsets.ModelViewSet):
 def video_compression_page(request):
     """视频压缩页面"""
     return render(request, 'video/compression.html')
+
 
 
 
