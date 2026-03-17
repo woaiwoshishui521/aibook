@@ -2,6 +2,7 @@ import os
 import signal
 import subprocess
 import psutil
+import socket
 from django.shortcuts import render
 from django.http import JsonResponse
 from django.views import View
@@ -9,6 +10,20 @@ from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
 
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+
+def check_port(port):
+    """检查端口是否开放"""
+    if not port:
+        return False
+    try:
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.settimeout(1)
+        result = sock.connect_ex(('127.0.0.1', port))
+        sock.close()
+        return result == 0
+    except:
+        return False
 
 
 class ProcessInfo:
@@ -24,16 +39,39 @@ class ProcessInfo:
 
     def get_process(self):
         """获取进程状态"""
-        # 查找进程 - 根据 command 关键词检测
-        keywords = self.command.split()
+        # 先检查端口是否开放（对于 Flower、Django 等有端口的服务）
+        if self.port and check_port(self.port):
+            self.status = 'running'
+            # 尝试找到对应的 PID
+            for proc in psutil.process_iter(['pid', 'name', 'cmdline']):
+                try:
+                    cmdline = proc.info.get('cmdline')
+                    if cmdline:
+                        cmd_str = ' '.join(cmdline)
+                        # 根据服务类型匹配
+                        if self.port == 5555:  # Flower
+                            if 'flower' in cmd_str.lower():
+                                self.pid = proc.info['pid']
+                                self.process = proc
+                                return
+                        elif self.port == 8000:  # Django
+                            if 'runserver' in cmd_str:
+                                self.pid = proc.info['pid']
+                                self.process = proc
+                                return
+                except (psutil.NoSuchProcess, psutil.AccessDenied):
+                    pass
+            # 如果没找到进程但端口开放，标记为运行中（PID 待定）
+            return
+
+        # 对于没有端口的服务，通过进程名检测
         for proc in psutil.process_iter(['pid', 'name', 'cmdline']):
             try:
                 cmdline = proc.info.get('cmdline')
                 if cmdline:
                     cmd_str = ' '.join(cmdline)
-                    # 检测是否包含命令关键词
-                    matched = all(kw in cmd_str for kw in keywords[:2])  # 匹配前两个关键词
-                    if matched:
+                    # Celery worker 检测
+                    if 'celery' in cmd_str and 'worker' in cmd_str:
                         self.process = proc
                         self.pid = proc.info['pid']
                         self.status = 'running'
@@ -153,13 +191,24 @@ class ServiceControl(View):
             return JsonResponse({'success': False, 'message': f'{service.name} 未在运行'})
 
         try:
-            if service.process:
+            if service.process and service.pid:
                 # 终止进程组
                 try:
                     os.killpg(os.getpgid(service.pid), signal.SIGTERM)
                 except:
                     service.process.terminate()
-                return JsonResponse({'success': True, 'message': f'{service.name} 已停止'})
+            elif service.port:
+                # 如果没有找到进程但端口开放，尝试通过端口找到进程并终止
+                for proc in psutil.process_iter(['pid', 'name', 'cmdline']):
+                    try:
+                        cmdline = proc.info.get('cmdline')
+                        if cmdline:
+                            cmd_str = ' '.join(cmdline)
+                            if 'flower' in cmd_str or 'runserver' in cmd_str:
+                                proc.terminate()
+                    except (psutil.NoSuchProcess, psutil.AccessDenied):
+                        pass
+            return JsonResponse({'success': True, 'message': f'{service.name} 已停止'})
         except Exception as e:
             return JsonResponse({'success': False, 'message': f'停止失败: {str(e)}'})
 
@@ -216,6 +265,9 @@ class ServiceDashboard(View):
             })
 
         return render(request, 'services/dashboard.html', context)
+
+
+
 
 
 

@@ -174,9 +174,24 @@
             pointer-events: none;
         }
     </style>
+    <style>
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            color: #667eea;
+            text-decoration: none;
+            font-size: 14px;
+            margin-bottom: 20px;
+        }
+        .back-link:hover {
+            text-decoration: underline;
+        }
+    </style>
 </head>
 <body>
     <div class="container">
+        <a href="/" class="back-link">← 返回项目管理后台</a>
+
         <div class="header">
             <h1>服务管理面板</h1>
             <p>管理和监控 Aibook 项目运行状态</p>
@@ -342,5 +357,6 @@
     </script>
 </body>
 </html>
+
 
 

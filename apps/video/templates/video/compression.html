@@ -587,6 +587,20 @@
     </style>
 </head>
 <body>
+    <style>
+        .back-link {
+            display: inline-block;
+            color: white;
+            text-decoration: none;
+            font-size: 14px;
+            margin-bottom: 20px;
+        }
+        .back-link:hover {
+            text-decoration: underline;
+        }
+    </style>
+    <a href="/" class="back-link">← 返回项目管理后台</a>
+
     <div class="container">
         <div class="header">
             <h1>🎬 视频压缩工具</h1>
@@ -905,9 +919,9 @@
             for (let i = 0; i < selectedFiles.length; i++) {
                 const file = selectedFiles[i];
                 const formData = new FormData();
-                
+
                 formData.append('original_video', file);
-                
+
                 // 设置任务名称
                 let taskTitle;
                 if (totalFiles === 1) {
@@ -936,7 +950,7 @@
                     }
 
                     successCount++;
-                    
+
                     // 更新按钮文本显示进度
                     submitBtn.innerHTML = `<span class="spinner"></span> 上传中... (${i + 1}/${totalFiles})`;
                 } catch (error) {
@@ -1230,79 +1244,79 @@
         // 格式化日期时间
         function formatDateTime(dateTimeStr) {
             if (!dateTimeStr) return '-';
-            
+
             const date = new Date(dateTimeStr);
             const now = new Date();
             const diff = now - date;
-            
+
             // 如果是今天
             const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
             const dateOnly = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-            
+
             if (dateOnly.getTime() === today.getTime()) {
                 // 今天，显示相对时间
                 const minutes = Math.floor(diff / 60000);
                 const hours = Math.floor(minutes / 60);
-                
+
                 if (minutes < 1) return '刚刚';
                 if (minutes < 60) return `${minutes}分钟前`;
                 if (hours < 24) return `${hours}小时前`;
             }
-            
+
             // 昨天
             const yesterday = new Date(today);
             yesterday.setDate(yesterday.getDate() - 1);
             if (dateOnly.getTime() === yesterday.getTime()) {
                 return `昨天 ${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
             }
-            
+
             // 其他日期，显示完整日期时间
             const year = date.getFullYear();
             const month = (date.getMonth() + 1).toString().padStart(2, '0');
             const day = date.getDate().toString().padStart(2, '0');
             const hour = date.getHours().toString().padStart(2, '0');
             const minute = date.getMinutes().toString().padStart(2, '0');
-            
+
             // 如果是今年，不显示年份
             if (year === now.getFullYear()) {
                 return `${month}-${day} ${hour}:${minute}`;
             }
-            
+
             return `${year}-${month}-${day} ${hour}:${minute}`;
         }
 
         // 计算时长（从开始到结束的耗时）
         function calculateDuration(startTimeStr, endTimeStr) {
             if (!startTimeStr || !endTimeStr) return '-';
-            
+
             const startTime = new Date(startTimeStr);
             const endTime = new Date(endTimeStr);
             const diffMs = endTime - startTime;
-            
+
             if (diffMs < 0) return '-';
-            
+
             const seconds = Math.floor(diffMs / 1000);
             const minutes = Math.floor(seconds / 60);
             const hours = Math.floor(minutes / 60);
             const days = Math.floor(hours / 24);
-            
+
             if (days > 0) {
                 const remainHours = hours % 24;
                 const remainMinutes = minutes % 60;
                 return `${days}天 ${remainHours}小时 ${remainMinutes}分钟`;
             }
-            
+
             if (hours > 0) {
                 const remainMinutes = minutes % 60;
                 const remainSeconds = seconds % 60;
                 return `${hours}小时 ${remainMinutes}分钟 ${remainSeconds}秒`;
             }
-            
+
             if (minutes > 0) {
                 const remainSeconds = seconds % 60;
                 return `${minutes}分钟 ${remainSeconds}秒`;
             }
-            
+
             return `${seconds}秒`;
         }
 
@@ -1315,6 +1329,7 @@
     </script>
 </body>
 </html>
+
 
 
 
