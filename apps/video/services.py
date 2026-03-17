@@ -243,12 +243,28 @@ class VideoCompressionService:
             task.completed_at = timezone.now()
             task.save()
 
+            # 删除临时压缩文件
+            try:
+                if output_path.exists():
+                    output_path.unlink()
+            except Exception as e:
+                print(f"删除临时文件失败: {str(e)}")
+
             return result
 
         except Exception as e:
             task.status = 'failed'
             task.error_message = str(e)
             task.save()
+            
+            # 如果压缩失败，也尝试清理临时文件
+            try:
+                if output_path.exists():
+                    output_path.unlink()
+            except Exception as cleanup_error:
+                print(f"清理临时文件失败: {str(cleanup_error)}")
+            
             raise
+
 
 
