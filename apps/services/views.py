@@ -41,8 +41,8 @@ class ProcessInfo:
         """获取进程状态"""
         # 先检查端口是否开放（对于 Flower、Django 等有端口的服务）
         if self.port and check_port(self.port):
-            self.status = 'running'
-            # 尝试找到对应的 PID
+            # 端口开放，尝试找到对应的 PID
+            found = False
             for proc in psutil.process_iter(['pid', 'name', 'cmdline']):
                 try:
                     cmdline = proc.info.get('cmdline')
@@ -50,34 +50,63 @@ class ProcessInfo:
                         cmd_str = ' '.join(cmdline)
                         # 根据服务类型匹配
                         if self.port == 5555:  # Flower
-                            if 'flower' in cmd_str.lower():
+                            # 匹配 celery flower 或 flower 命令
+                            if 'flower' in cmd_str.lower() or ('celery' in cmd_str and 'flower' in cmd_str):
                                 self.pid = proc.info['pid']
                                 self.process = proc
+                                self.status = 'running'
+                                found = True
                                 return
                         elif self.port == 8000:  # Django
                             if 'runserver' in cmd_str:
                                 self.pid = proc.info['pid']
                                 self.process = proc
+                                self.status = 'running'
+                                found = True
                                 return
                 except (psutil.NoSuchProcess, psutil.AccessDenied):
                     pass
-            # 如果没找到进程但端口开放，标记为运行中（PID 待定）
+            # 如果没找到进程但端口开放，尝试通过端口找到任意进程
+            if not found:
+                for proc in psutil.process_iter(['pid', 'name']):
+                    try:
+                        # 检查进程监听在该端口上
+                        if proc.info['name'] in ('python', 'python3', 'celery'):
+                            connections = proc.net_connections()
+                            for conn in connections:
+                                if hasattr(conn, 'laddr') and conn.laddr.port == self.port:
+                                    self.pid = proc.info['pid']
+                                    self.process = proc
+                                    self.status = 'running'
+                                    found = True
+                                    return
+                    except (psutil.NoSuchProcess, psutil.AccessDenied):
+                        pass
+            # 端口开放但找不到对应进程，认为未启动
+            if not found:
+                self.status = 'stopped'
             return
 
-        # 对于没有端口的服务，通过进程名检测
-        for proc in psutil.process_iter(['pid', 'name', 'cmdline']):
-            try:
-                cmdline = proc.info.get('cmdline')
-                if cmdline:
-                    cmd_str = ' '.join(cmdline)
-                    # Celery worker 检测
-                    if 'celery' in cmd_str and 'worker' in cmd_str:
-                        self.process = proc
-                        self.pid = proc.info['pid']
-                        self.status = 'running'
-                        return
-            except (psutil.NoSuchProcess, psutil.AccessDenied):
-                pass
+        # 只对没有端口的服务（如 Celery Worker）进行进程名检测
+        if not self.port:
+            # 对于没有端口的服务，通过进程名检测
+            for proc in psutil.process_iter(['pid', 'name', 'cmdline']):
+                try:
+                    cmdline = proc.info.get('cmdline')
+                    if cmdline:
+                        cmd_str = ' '.join(cmdline)
+                        # Celery worker 检测
+                        if 'celery' in cmd_str and 'worker' in cmd_str:
+                            self.process = proc
+                            self.pid = proc.info['pid']
+                            self.status = 'running'
+                            return
+                except (psutil.NoSuchProcess, psutil.AccessDenied):
+                    pass
+            self.status = 'stopped'
+            return
+
+        # 有端口但端口未开放
         self.status = 'stopped'
 
 
@@ -265,6 +294,9 @@ class ServiceDashboard(View):
             })
 
         return render(request, 'services/dashboard.html', context)
+
+
+
 
 
 

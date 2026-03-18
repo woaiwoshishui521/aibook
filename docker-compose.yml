@@ -94,6 +94,28 @@ services:
     networks:
       - aibook_network
 
+  flower:
+    build: .
+    container_name: aibook_flower
+    command: celery -A config flower --port=5555
+    volumes:
+      - .:/app
+    ports:
+      - "5555:5555"
+    environment:
+      - DJANGO_ENV=production
+      - SECRET_KEY=${SECRET_KEY}
+      - DB_NAME=${DB_NAME}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_HOST=db
+      - REDIS_URL=redis://redis:6379/0
+    depends_on:
+      - redis
+      - celery
+    networks:
+      - aibook_network
+
 volumes:
   postgres_data:
   redis_data:
@@ -103,3 +125,4 @@ volumes:
 networks:
   aibook_network:
     driver: bridge
+
