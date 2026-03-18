@@ -717,6 +717,28 @@
         let selectedFiles = []; // 改为数组存储多个文件
         let refreshInterval = null;
 
+        // 获取 CSRF token
+        function getCSRFToken() {
+            return document.querySelector('[name=csrfmiddlewaretoken]')?.value 
+                || getCookie('csrftoken');
+        }
+
+        // 从 cookie 获取 CSRF token
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+
         // Toast 提示函数
         function showToast(message, type = 'info', duration = 3000) {
             const container = document.getElementById('toastContainer');
@@ -941,7 +963,11 @@
                 try {
                     const response = await fetch(`${API_BASE}/tasks/`, {
                         method: 'POST',
-                        body: formData
+                        headers: {
+                            'X-CSRFToken': getCSRFToken()
+                        },
+                        body: formData,
+                        credentials: 'include'
                     });
 
                     if (!response.ok) {
@@ -1186,7 +1212,11 @@
         async function retryTask(taskId) {
             try {
                 const response = await fetch(`${API_BASE}/tasks/${taskId}/retry/`, {
-                    method: 'POST'
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': getCSRFToken()
+                    },
+                    credentials: 'include'
                 });
 
                 if (!response.ok) {
@@ -1209,7 +1239,11 @@
 
             try {
                 const response = await fetch(`${API_BASE}/tasks/${taskId}/`, {
-                    method: 'DELETE'
+                    method: 'DELETE',
+                    headers: {
+                        'X-CSRFToken': getCSRFToken()
+                    },
+                    credentials: 'include'
                 });
 
                 if (!response.ok) {
@@ -1329,6 +1363,10 @@
     </script>
 </body>
 </html>
+
+
+
+
 
 
 
