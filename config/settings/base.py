@@ -45,6 +45,7 @@ LOCAL_APPS = [
     'apps.users',
     'apps.core',
     'apps.video',
+    'apps.image',
     'apps.services',
 ]
 
@@ -168,6 +169,7 @@ CELERY_TASK_TRACK_STARTED = True
 CELERY_TASK_TIME_LIMIT = 30 * 60  # 30 minutes
 CELERY_WORKER_CONCURRENCY = 2  # 限制并发数为2，避免资源耗尽
 CELERY_WORKER_MAX_TASKS_PER_CHILD = 10  # 每个worker处理10个任务后重启，防止内存泄漏
+
 
 
 

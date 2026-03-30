@@ -33,6 +33,9 @@ urlpatterns = [
     # Video compression
     path('video/', include('apps.video.urls')),
 
+    # Image compression
+    path('image/', include('apps.image.urls')),
+
     # Service management
     path('services/', include('apps.services.urls')),
 
@@ -50,6 +53,7 @@ if settings.DEBUG:
         urlpatterns = [
             path('__debug__/', include(debug_toolbar.urls)),
         ] + urlpatterns
+
 
 
 
