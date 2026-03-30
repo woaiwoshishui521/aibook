@@ -917,13 +917,18 @@
             const total = selectedFiles.reduce((sum, file) => sum + file.size, 0);
             totalSize.textContent = formatFileSize(total);
 
-            fileList.innerHTML = selectedFiles.map((file, index) => `
-                <div class="file-list-item">
-                    <div class="file-list-item-name" title="${file.name}">${file.name}</div>
-                    <div class="file-list-item-size">${formatFileSize(file.size)}</div>
-                    <button class="file-list-item-remove" onclick="removeFile(${index})" type="button">×</button>
-                </div>
-            `).join('');
+            fileList.innerHTML = selectedFiles.map((file, index) => {
+                const info = fileImageInfos[file.name];
+                const resolution = info ? `${info.width}x${info.height}` : '加载中...';
+                return `
+                    <div class="file-list-item">
+                        <div class="file-list-item-name" title="${file.name}">${file.name}</div>
+                        <div class="file-list-item-size">${resolution}</div>
+                        <div class="file-list-item-size">${formatFileSize(file.size)}</div>
+                        <button class="file-list-item-remove" onclick="removeFile(${index})" type="button">×</button>
+                    </div>
+                `;
+            }).join('');
         }
 
         // 移除文件
@@ -1458,6 +1463,7 @@
     </script>
 </body>
 </html>
+
 
 
 
