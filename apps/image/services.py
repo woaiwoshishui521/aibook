@@ -53,10 +53,19 @@ class ImageCompressionService:
         """
         try:
             with Image.open(image_path) as img:
+                # 处理 EXIF 方向信息，获取正确的宽高
+                try:
+                    from PIL import ImageOps
+                    transposed = ImageOps.exif_transpose(img)
+                    if transposed is not None:
+                        img = transposed
+                except Exception:
+                    pass  # 如果没有EXIF信息或处理失败，继续使用原图
+                
                 info = {
                     'width': img.width,
                     'height': img.height,
-                    'format': img.format,
+                    'format': img.format or 'JPEG',
                     'mode': img.mode,
                     'size': os.path.getsize(image_path),
                 }
@@ -150,8 +159,20 @@ class ImageCompressionService:
 
             # 打开图片
             with Image.open(input_path) as img:
+                # 处理 EXIF 方向信息，自动旋转图片
+                try:
+                    from PIL import ImageOps
+                    transposed = ImageOps.exif_transpose(img)
+                    if transposed is not None:
+                        img = transposed
+                except Exception:
+                    pass  # 如果没有EXIF信息或处理失败，继续使用原图
+                
                 # 转换 RGBA 图片为 RGB (如果目标格式是 JPEG)
-                output_format = target_format if target_format != 'same' else original_info['format'].lower()
+                original_format = original_info.get('format', 'JPEG')
+                if original_format is None:
+                    original_format = 'JPEG'
+                output_format = target_format if target_format != 'same' else original_format.lower()
                 
                 if output_format == 'jpeg' and img.mode in ('RGBA', 'LA', 'P'):
                     # 创建白色背景
@@ -187,7 +208,7 @@ class ImageCompressionService:
                 # 确定输出格式
                 save_format = ImageCompressionService.FORMAT_MAPPING.get(
                     output_format, 
-                    original_info['format']
+                    original_format
                 )
 
                 # 保存压缩后的图片
@@ -329,4 +350,10 @@ class ImageCompressionService:
                 print(f"清理临时文件失败: {str(cleanup_error)}")
             
             raise
+
+
+
+
+
+
 
