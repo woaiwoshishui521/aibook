@@ -694,6 +694,19 @@
                             <option value="webp">WebP</option>
                         </select>
                     </div>
+
+                    <div class="form-group">
+                        <label for="scalePreset">常用分辨率预设</label>
+                        <select id="scalePreset">
+                            <option value="">不缩放</option>
+                            <option value="1920x1080">1920x1080 (Full HD)</option>
+                            <option value="1280x720">1280x720 (HD)</option>
+                            <option value="800x600">800x600</option>
+                            <option value="640x480">640x480</option>
+                            <option value="50%">50% (半尺寸)</option>
+                            <option value="25%">25% (四分之一)</option>
+                        </select>
+                    </div>
                 </div>
 
                 <div class="custom-settings settings-grid" id="customSettings">
@@ -743,6 +756,7 @@
     <script>
         const API_BASE = '/image/api';
         let selectedFiles = [];
+        let fileImageInfos = {}; // 保存每个文件的原始尺寸信息
         let refreshInterval = null;
 
         // 获取 CSRF token
@@ -843,7 +857,36 @@
             if (files.length === 0) return;
 
             selectedFiles = files;
-            updateFileList();
+
+            // 读取每个图片的尺寸
+            fileImageInfos = {};
+            let loadedCount = 0;
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const img = new Image();
+                    img.onload = function() {
+                        fileImageInfos[file.name] = {
+                            width: img.width,
+                            height: img.height
+                        };
+                        loadedCount++;
+                        // 所有图片尺寸都读取完毕后更新显示
+                        if (loadedCount === files.length) {
+                            updateFileList();
+                            // 如果已经选择了预设，更新 max_width/max_height
+                            const scalePreset = document.getElementById('scalePreset');
+                            if (scalePreset.value && scalePreset.value.endsWith('%')) {
+                                scalePreset.dispatchEvent(new Event('change'));
+                            }
+                        }
+                    };
+                    img.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+
             document.getElementById('submitBtn').disabled = false;
 
             if (!document.getElementById('taskTitle').value && files.length > 0) {
@@ -909,12 +952,44 @@
             const qualitySelect = document.getElementById('quality');
             const customSettings = document.getElementById('customSettings');
             const form = document.getElementById('compressionForm');
+            const scalePreset = document.getElementById('scalePreset');
 
             qualitySelect.addEventListener('change', function() {
                 if (this.value === 'custom') {
                     customSettings.classList.add('active');
                 } else {
                     customSettings.classList.remove('active');
+                }
+            });
+
+            // 常用分辨率预设变化时自动填充 max_width/max_height
+            scalePreset.addEventListener('change', function() {
+                const value = this.value;
+                const maxWidthInput = document.getElementById('maxWidth');
+                const maxHeightInput = document.getElementById('maxHeight');
+
+                if (!value) {
+                    // 不缩放，清空
+                    maxWidthInput.value = '';
+                    maxHeightInput.value = '';
+                } else if (value.endsWith('%')) {
+                    // 百分比缩放，根据第一个图片的尺寸计算
+                    const percentage = parseInt(value) / 100;
+                    const firstFile = selectedFiles[0];
+                    if (firstFile && fileImageInfos[firstFile.name]) {
+                        const info = fileImageInfos[firstFile.name];
+                        maxWidthInput.value = Math.round(info.width * percentage);
+                        maxHeightInput.value = Math.round(info.height * percentage);
+                    } else {
+                        // 图片尺寸还没加载，先清空
+                        maxWidthInput.value = '';
+                        maxHeightInput.value = '';
+                    }
+                } else if (value.includes('x')) {
+                    // 固定分辨率
+                    const [width, height] = value.split('x').map(Number);
+                    maxWidthInput.value = width;
+                    maxHeightInput.value = height;
                 }
             });
 
@@ -936,6 +1011,7 @@
 
             const quality = document.getElementById('quality').value;
             const targetFormat = document.getElementById('targetFormat').value;
+            const scalePreset = document.getElementById('scalePreset').value;
             const baseTitle = document.getElementById('taskTitle').value;
 
             // 获取自定义设置
@@ -948,6 +1024,21 @@
                 if (targetQuality) customSettings.target_quality = targetQuality;
                 if (maxWidth) customSettings.max_width = maxWidth;
                 if (maxHeight) customSettings.max_height = maxHeight;
+            }
+
+            // 如果选择了预设分辨率，传递 max_width/max_height
+            if (scalePreset) {
+                if (scalePreset.endsWith('%')) {
+                    // 百分比预设，从输入框读取已计算好的值
+                    const maxWidth = document.getElementById('maxWidth').value;
+                    const maxHeight = document.getElementById('maxHeight').value;
+                    if (maxWidth) customSettings.max_width = maxWidth;
+                    if (maxHeight) customSettings.max_height = maxHeight;
+                } else if (scalePreset.includes('x')) {
+                    const [maxWidth, maxHeight] = scalePreset.split('x').map(Number);
+                    customSettings.max_width = maxWidth;
+                    customSettings.max_height = maxHeight;
+                }
             }
 
             let successCount = 0;
@@ -1075,6 +1166,12 @@
                             <div class="task-info-label">质量</div>
                             <div class="task-info-value">${task.quality_display}</div>
                         </div>
+                        ${task.target_format && task.target_format !== 'same' ? `
+                            <div class="task-info-item">
+                                <div class="task-info-label">格式</div>
+                                <div class="task-info-value">${task.format_display || task.target_format}</div>
+                            </div>
+                        ` : ''}
                         ${task.original_size_mb ? `
                             <div class="task-info-item">
                                 <div class="task-info-label">原始大小</div>
@@ -1361,3 +1458,14 @@
     </script>
 </body>
 </html>
+
+
+
+
+
+
+
+
+
+
+

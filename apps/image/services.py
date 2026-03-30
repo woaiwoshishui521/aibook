@@ -86,21 +86,36 @@ class ImageCompressionService:
         if not max_width and not max_height:
             return original_width, original_height
 
-        # 计算宽高比
         aspect_ratio = original_width / original_height
 
-        new_width = original_width
-        new_height = original_height
-
-        # 如果设置了最大宽度且原始宽度超过最大宽度
-        if max_width and original_width > max_width:
-            new_width = max_width
-            new_height = int(new_width / aspect_ratio)
-
-        # 如果设置了最大高度且计算后的高度超过最大高度
-        if max_height and new_height > max_height:
-            new_height = max_height
-            new_width = int(new_height * aspect_ratio)
+        # 如果两者都设置了
+        if max_width and max_height:
+            # 以宽度为基准计算高度
+            width_based_height = max_width / aspect_ratio
+            if width_based_height <= max_height:
+                # 宽度受限
+                new_width = max_width
+                new_height = int(width_based_height)
+            else:
+                # 高度受限
+                new_height = max_height
+                new_width = int(new_height * aspect_ratio)
+        elif max_width:
+            # 只设置了最大宽度
+            if original_width > max_width:
+                new_width = max_width
+                new_height = int(max_width / aspect_ratio)
+            else:
+                new_width = original_width
+                new_height = original_height
+        else:
+            # 只设置了最大高度
+            if original_height > max_height:
+                new_height = max_height
+                new_width = int(max_height * aspect_ratio)
+            else:
+                new_width = original_width
+                new_height = original_height
 
         return new_width, new_height
 
@@ -314,3 +329,4 @@ class ImageCompressionService:
                 print(f"清理临时文件失败: {str(cleanup_error)}")
             
             raise
+
