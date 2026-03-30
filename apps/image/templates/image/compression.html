@@ -1169,7 +1169,10 @@
                     <div class="task-info">
                         <div class="task-info-item">
                             <div class="task-info-label">质量</div>
-                            <div class="task-info-value">${task.quality_display}</div>
+                            <div class="task-info-value">
+                                ${task.quality_display}
+                                ${task.quality === 'custom' && task.target_quality ? ` (${task.target_quality})` : ''}
+                            </div>
                         </div>
                         ${task.target_format && task.target_format !== 'same' ? `
                             <div class="task-info-item">
@@ -1177,16 +1180,26 @@
                                 <div class="task-info-value">${task.format_display || task.target_format}</div>
                             </div>
                         ` : ''}
+                        ${task.max_width || task.max_height ? `
+                            <div class="task-info-item">
+                                <div class="task-info-label">限制尺寸</div>
+                                <div class="task-info-value">
+                                    ${task.max_width ? task.max_width + 'w' : ''}
+                                    ${task.max_width && task.max_height ? ' × ' : ''}
+                                    ${task.max_height ? task.max_height + 'h' : ''}
+                                </div>
+                            </div>
+                        ` : ''}
                         ${task.original_size_mb ? `
                             <div class="task-info-item">
                                 <div class="task-info-label">原始大小</div>
-                                <div class="task-info-value">${task.original_size_mb} MB</div>
+                                <div class="task-info-value">${formatFileSize(task.original_size)}</div>
                             </div>
                         ` : ''}
-                        ${task.compressed_size_mb ? `
+                        ${task.compressed_size ? `
                             <div class="task-info-item">
                                 <div class="task-info-label">压缩后</div>
-                                <div class="task-info-value">${task.compressed_size_mb} MB</div>
+                                <div class="task-info-value">${formatFileSize(task.compressed_size)}</div>
                             </div>
                         ` : ''}
                         ${task.compression_percentage ? `
@@ -1463,6 +1476,8 @@
     </script>
 </body>
 </html>
+
+
 
 
 
