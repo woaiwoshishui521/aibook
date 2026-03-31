@@ -39,6 +39,9 @@ urlpatterns = [
     # Service management
     path('services/', include('apps.services.urls')),
 
+    # OSS file storage
+    path('storage/', include('apps.storage.urls')),
+
     # Prometheus metrics
     path('metrics/', include('django_prometheus.urls')),
 ]
@@ -53,6 +56,7 @@ if settings.DEBUG:
         urlpatterns = [
             path('__debug__/', include(debug_toolbar.urls)),
         ] + urlpatterns
+
 
 
 

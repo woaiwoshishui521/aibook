@@ -78,8 +78,17 @@ LOGGING = {
     },
 }
 
+# Static files — use simple storage in development (no manifest required)
+STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.StaticFilesStorage'
+
+# Remove WhiteNoise in development — Django's runserver handles static files
+# via staticfiles finders (reads directly from each app's static/ directory)
+MIDDLEWARE = [m for m in MIDDLEWARE if 'whitenoise' not in m.lower()]
+
 # Create logs directory if not exists
 LOGS_DIR = BASE_DIR / 'logs'
 LOGS_DIR.mkdir(exist_ok=True)
+
+
 
 

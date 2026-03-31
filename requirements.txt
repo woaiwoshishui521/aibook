@@ -55,3 +55,6 @@ flower>=2.0.1
 
 # Service Management
 psutil>=5.9.0
+
+# 阿里云OSS
+oss2>=2.18.0

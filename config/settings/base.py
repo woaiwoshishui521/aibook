@@ -47,6 +47,7 @@ LOCAL_APPS = [
     'apps.video',
     'apps.image',
     'apps.services',
+    'apps.storage',
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
@@ -169,6 +170,15 @@ CELERY_TASK_TRACK_STARTED = True
 CELERY_TASK_TIME_LIMIT = 30 * 60  # 30 minutes
 CELERY_WORKER_CONCURRENCY = 2  # 限制并发数为2，避免资源耗尽
 CELERY_WORKER_MAX_TASKS_PER_CHILD = 10  # 每个worker处理10个任务后重启，防止内存泄漏
+
+# 阿里云OSS配置
+OSS_ACCESS_KEY_ID = env('OSS_ACCESS_KEY_ID', default='')
+OSS_ACCESS_KEY_SECRET = env('OSS_ACCESS_KEY_SECRET', default='')
+OSS_BUCKET_NAME = env('OSS_BUCKET_NAME', default='')
+OSS_ENDPOINT = env('OSS_ENDPOINT', default='oss-cn-hangzhou.aliyuncs.com')
+OSS_CUSTOM_DOMAIN = env('OSS_CUSTOM_DOMAIN', default='')  # 自定义域名（可选）
+
+
 
 
 
