@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>OSS 文件存储</title>
-    <link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/element-ui@2.15.14/lib/theme-chalk/index.css">
     <style>
         * {
             margin: 0;
@@ -608,7 +608,7 @@
                 <!-- 文档 -->
                 <div v-else-if="previewType === 'document'" style="padding:20px 0;">
                     <iframe v-if="previewExt === 'pdf'" :src="previewUrl"
-                        style="width:100%;height:70vh;border:none;border-radius:8px;" />
+                        style="width:100%;height:70vh;border:none;border-radius:8px;"></iframe>
                     <div v-else style="padding:40px 0;">
                         <div style="font-size:4em;margin-bottom:20px;">📄</div>
                         <p style="color:#606266;margin-bottom:20px;">该文档格式暂不支持在线预览</p>
@@ -626,15 +626,17 @@
         </el-dialog>
     </div>
 </body>
-<script src="https://unpkg.com/vue@2/dist/vue.js"></script>
-<!-- import JavaScript -->
-<script src="https://unpkg.com/element-ui/lib/index.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/vue@2.7.16/dist/vue.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/element-ui@2.15.14/lib/index.js"></script>
 <script>
-        Vue.use(ELEMENT);
+        // 确保 Element UI 已加载
+        if (typeof ELEMENT !== 'undefined') {
+            Vue.use(ELEMENT);
+        }
         const API_BASE = '/storage/api/files';
         new Vue({
             el: '#app',
-            data: function () {
+            data() {
                 return {
                     // 上传
                     isDragover: false,
