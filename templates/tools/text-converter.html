@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>文本转换工具 - Aibook</title>
+    <link rel="stylesheet" href="/static/storage/vendor/element-ui.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .back-link {
+            display: inline-block;
+            color: rgba(255, 255, 255, 0.8);
+            text-decoration: none;
+            font-size: 14px;
+            margin-bottom: 16px;
+            transition: color 0.2s;
+        }
+
+        .back-link:hover {
+            color: #fff;
+        }
+
+        .page-header {
+            text-align: center;
+            color: white;
+            margin-bottom: 28px;
+        }
+
+        .page-header h1 {
+            font-size: 2.2em;
+            font-weight: 700;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+        }
+
+        .page-header p {
+            font-size: 1em;
+            opacity: 0.75;
+        }
+
+        #app {
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+
+        /* 主卡片 */
+        .main-card {
+            background: #fff;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+            margin-bottom: 24px;
+        }
+
+        .card-header {
+            background: linear-gradient(90deg, #0f3460, #533483);
+            padding: 18px 24px;
+            color: white;
+            font-size: 1.1em;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .card-body {
+            padding: 24px;
+        }
+
+        /* 输入区域 */
+        .input-section {
+            margin-bottom: 24px;
+        }
+
+        .section-label {
+            font-size: 0.95em;
+            font-weight: 600;
+            color: #303133;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .input-textarea {
+            width: 100%;
+            min-height: 180px;
+            padding: 14px;
+            border: 1px solid #dcdfe6;
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            resize: vertical;
+            transition: border-color 0.2s;
+        }
+
+        .input-textarea:focus {
+            outline: none;
+            border-color: #409EFF;
+        }
+
+        .input-textarea::placeholder {
+            color: #909399;
+        }
+
+        /* 选项区域 */
+        .options-section {
+            background: #f8f9ff;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 24px;
+            border: 1px solid #ebeef5;
+        }
+
+        .options-title {
+            font-size: 1em;
+            font-weight: 600;
+            color: #303133;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .option-row {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            align-items: flex-start;
+        }
+
+        .option-item {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .option-label {
+            font-size: 0.85em;
+            color: #606266;
+            margin-bottom: 8px;
+            display: block;
+        }
+
+        /* 按钮组 */
+        .button-group {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-bottom: 24px;
+        }
+
+        .btn-convert {
+            padding: 12px 32px;
+            font-size: 1em;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 500;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #409EFF 0%, #337ecc 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(64, 158, 255, 0.4);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #67c23a 0%, #529b2e 100%);
+            color: white;
+        }
+
+        .btn-success:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(103, 194, 58, 0.4);
+        }
+
+        .btn-warning {
+            background: linear-gradient(135deg, #e6a23c 0%, #c78c1c 100%);
+            color: white;
+        }
+
+        .btn-warning:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(230, 162, 60, 0.4);
+        }
+
+        .btn-info {
+            background: linear-gradient(135deg, #909399 0%, #707379 100%);
+            color: white;
+        }
+
+        .btn-info:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(144, 147, 153, 0.4);
+        }
+
+        /* 输出区域 */
+        .output-section {
+            position: relative;
+        }
+
+        .output-textarea {
+            width: 100%;
+            min-height: 180px;
+            padding: 14px;
+            border: 1px solid #dcdfe6;
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            resize: vertical;
+            background: #f5f7fa;
+        }
+
+        .output-textarea:focus {
+            outline: none;
+            border-color: #67c23a;
+        }
+
+        .copy-btn {
+            position: absolute;
+            top: 36px;
+            right: 10px;
+        }
+
+        /* 统计信息 */
+        .stats-bar {
+            display: flex;
+            gap: 20px;
+            padding: 12px 16px;
+            background: #f0f9eb;
+            border-radius: 8px;
+            margin-top: 12px;
+            flex-wrap: wrap;
+        }
+
+        .stat-item {
+            font-size: 0.88em;
+            color: #67c23a;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .stat-item.warning {
+            color: #e6a23c;
+        }
+
+        /* 预设按钮 */
+        .preset-tags {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-top: 8px;
+        }
+
+        .preset-tag {
+            padding: 4px 12px;
+            background: #ecf5ff;
+            color: #409EFF;
+            border-radius: 12px;
+            font-size: 0.8em;
+            cursor: pointer;
+            border: 1px solid #b3d8ff;
+            transition: all 0.2s;
+        }
+
+        .preset-tag:hover {
+            background: #409EFF;
+            color: white;
+        }
+
+        /* 提示 */
+        .tip-text {
+            font-size: 0.8em;
+            color: #909399;
+            margin-top: 6px;
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 12px;
+            }
+
+            .page-header h1 {
+                font-size: 1.6em;
+            }
+
+            .card-body {
+                padding: 16px;
+            }
+
+            .option-row {
+                flex-direction: column;
+                gap: 16px;
+            }
+
+            .option-item {
+                width: 100%;
+            }
+
+            .button-group {
+                flex-direction: column;
+            }
+
+            .btn-convert {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <a href="/" class="back-link">← 返回项目管理后台</a>
+    <div class="page-header">
+        <h1>🔧 文本转换工具</h1>
+        <p>将多行文本转换为逗号分隔的数据，支持自定义前后缀</p>
+    </div>
+    <div id="app">
+        <!-- 输入区域 -->
+        <div class="main-card">
+            <div class="card-header">
+                <span>📝</span> 输入文本
+            </div>
+            <div class="card-body">
+                <div class="input-section">
+                    <div class="section-label">
+                        <span>原始文本</span>
+                        <span style="font-weight:400;color:#909399;font-size:0.9em;">（每行一条数据）</span>
+                    </div>
+                    <textarea 
+                        v-model="inputText" 
+                        class="input-textarea" 
+                        placeholder="请输入多行文本，每行一条数据，例如：&#10;苹果&#10;香蕉&#10;橙子"></textarea>
+                </div>
+
+                <!-- 选项区域 -->
+                <div class="options-section">
+                    <div class="options-title">
+                        <span>⚙️</span> 转换选项
+                    </div>
+                    <div class="option-row">
+                        <div class="option-item">
+                            <label class="option-label">行分隔符（默认逗号）</label>
+                            <el-select v-model="separator" placeholder="选择分隔符" style="width:100%;">
+                                <el-option label="逗号 (,)" value=","></el-option>
+                                <el-option label="分号 (;)" value=";"></el-option>
+                                <el-option label="竖线 (|)" value="|"></el-option>
+                                <el-option label="空格 ( )" value=" "></el-option>
+                                <el-option label="制表符 (\\t)" value="\t"></el-option>
+                                <el-option label="换行 (\\n)" value="\n"></el-option>
+                            </el-select>
+                        </div>
+                        <div class="option-item">
+                            <label class="option-label">前缀（每行开头添加）</label>
+                            <el-input v-model="prefix" placeholder="例如：'" clearable></el-input>
+                            <div class="preset-tags">
+                                <span class="preset-tag" @click="setPrefix('\'')" title="单引号">'</span>
+                                <span class="preset-tag" @click="setPrefix('&quot;')" title="双引号">"</span>
+                                <span class="preset-tag" @click="setPrefix('`')" title="反引号">`</span>
+                                <span class="preset-tag" @click="setPrefix('[')" title="左方括号">[</span>
+                                <span class="preset-tag" @click="setPrefix('')" title="清除">✕</span>
+                            </div>
+                        </div>
+                        <div class="option-item">
+                            <label class="option-label">后缀（每行结尾添加）</label>
+                            <el-input v-model="suffix" placeholder="例如：'" clearable></el-input>
+                            <div class="preset-tags">
+                                <span class="preset-tag" @click="setSuffix('\'')" title="单引号">'</span>
+                                <span class="preset-tag" @click="setSuffix('&quot;')" title="双引号">"</span>
+                                <span class="preset-tag" @click="setSuffix('`')" title="反引号">`</span>
+                                <span class="preset-tag" @click="setSuffix(']')" title="右方括号">]</span>
+                                <span class="preset-tag" @click="setSuffix('')" title="清除">✕</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="option-row" style="margin-top:16px;">
+                        <div class="option-item">
+                            <el-checkbox v-model="trimSpace">自动去除每行首尾空格</el-checkbox>
+                        </div>
+                        <div class="option-item">
+                            <el-checkbox v-model="removeEmpty">自动去除空行</el-checkbox>
+                        </div>
+                        <div class="option-item">
+                            <el-checkbox v-model="addQuotes">整体添加引号（SQL/JSON用）</el-checkbox>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 按钮组 -->
+                <div class="button-group">
+                    <button class="btn-convert btn-primary" @click="convert">
+                        <span>🔄</span> 开始转换
+                    </button>
+                    <button class="btn-convert btn-success" @click="copyResult">
+                        <span>📋</span> 复制结果
+                    </button>
+                    <button class="btn-convert btn-warning" @click="preview">
+                        <span>👁️</span> 预览效果
+                    </button>
+                    <button class="btn-convert btn-info" @click="reset">
+                        <span>🔄</span> 重置
+                    </button>
+                </div>
+
+                <!-- 输出区域 -->
+                <div class="output-section">
+                    <div class="section-label">
+                        <span>📤</span> 转换结果
+                    </div>
+                    <textarea 
+                        v-model="outputText" 
+                        class="output-textarea" 
+                        placeholder="转换结果将显示在这里..."></textarea>
+                    <el-button class="copy-btn" type="primary" size="small" icon="el-icon-document-copy" @click="copyResult">
+                        复制
+                    </el-button>
+                </div>
+
+                <!-- 统计信息 -->
+                <div class="stats-bar" v-if="outputText">
+                    <div class="stat-item">
+                        <span>📊</span> 输入行数：{{ inputLines }}
+                    </div>
+                    <div class="stat-item">
+                        <span>📈</span> 输出行数：{{ outputLines }}
+                    </div>
+                    <div class="stat-item">
+                        <span>📏</span> 结果长度：{{ outputLength }} 字符
+                    </div>
+                    <div class="stat-item warning" v-if="removedLines > 0">
+                        <span>🗑️</span> 已去除空行：{{ removedLines }}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 预览对话框 -->
+        <el-dialog title="预览效果" :visible.sync="previewVisible" width="70%" top="5vh" append-to-body>
+            <div style="max-height:60vh;overflow-y:auto;">
+                <div style="margin-bottom:16px;color:#909399;font-size:0.9em;">
+                    共 {{ previewLines.length }} 条数据：
+                </div>
+                <div v-for="item in previewData" :key="item.index" style="padding:8px 12px;margin-bottom:4px;background:#f5f7fa;border-radius:4px;font-family:monospace;font-size:0.9em;">
+                    <span style="color:#909399;margin-right:12px;">{{ item.index }}</span>
+                    {{ item.line }}
+                </div>
+            </div>
+            <div slot="footer" class="dialog-footer">
+                <el-button type="primary" @click="copyResult">复制全部</el-button>
+                <el-button @click="previewVisible = false">关闭</el-button>
+            </div>
+        </el-dialog>
+    </div>
+    
+</body>
+<script src="/static/storage/vendor/vue.min.js"></script>
+<script src="/static/storage/vendor/element-ui.umd.js"></script>
+<script>
+    if (typeof ELEMENT !== 'undefined') {
+        Vue.use(ELEMENT);
+    }
+    new Vue({
+        el: '#app',
+        data() {
+            return {
+                inputText: '',
+                outputText: '',
+                separator: ',',
+                prefix: '',
+                suffix: '',
+                trimSpace: true,
+                removeEmpty: true,
+                addQuotes: false,
+                previewVisible: false,
+                previewLines: []
+            };
+        },
+        computed: {
+            inputLines() {
+                if (!this.inputText) return 0;
+                let lines = this.inputText.split('\n');
+                if (this.trimSpace) {
+                    lines = lines.map(l => l.trim());
+                }
+                if (this.removeEmpty) {
+                    lines = lines.filter(l => l !== '');
+                }
+                return lines.length;
+            },
+            outputLines() {
+                if (!this.outputText) return 0;
+                return this.outputText.split(this.separator).length;
+            },
+            outputLength() {
+                return this.outputText ? this.outputText.length : 0;
+            },
+            removedLines() {
+                if (!this.inputText) return 0;
+                let original = this.inputText.split('\n').length;
+                let processed = this.inputLines;
+                return original - processed;
+            },
+            previewData() {
+                return this.previewLines.map((line, idx) => ({
+                    index: idx + 1,
+                    line: line
+                }));
+            }
+        },
+        methods: {
+            convert() {
+                if (!this.inputText) {
+                    this.$message.warning('请输入要转换的文本');
+                    return;
+                }
+
+                let lines = this.inputText.split('\n');
+                
+                // 去除首尾空格
+                if (this.trimSpace) {
+                    lines = lines.map(l => l.trim());
+                }
+                
+                // 去除空行
+                if (this.removeEmpty) {
+                    lines = lines.filter(l => l !== '');
+                }
+
+                // 添加前后缀
+                if (this.prefix || this.suffix) {
+                    lines = lines.map(l => this.prefix + l + this.suffix);
+                }
+
+                // 整体添加引号（用于SQL/JSON）
+                if (this.addQuotes) {
+                    lines = lines.map(l => '"' + l + '"');
+                }
+
+                // 用分隔符连接
+                let sep = this.separator;
+                if (sep === '\\t') sep = '\t';
+                if (sep === '\\n') sep = '\n';
+                
+                this.outputText = lines.join(sep);
+                this.$message.success('转换完成！');
+            },
+
+            copyResult() {
+                if (!this.outputText) {
+                    this.$message.warning('没有可复制的内容');
+                    return;
+                }
+                try {
+                    navigator.clipboard.writeText(this.outputText).then(() => {
+                        this.$message.success('已复制到剪贴板');
+                    }).catch(() => {
+                        this.fallbackCopy(this.outputText);
+                    });
+                } catch (e) {
+                    this.fallbackCopy(this.outputText);
+                }
+            },
+
+            fallbackCopy(text) {
+                const textarea = document.createElement('textarea');
+                textarea.value = text;
+                textarea.style.position = 'fixed';
+                textarea.style.opacity = '0';
+                document.body.appendChild(textarea);
+                textarea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textarea);
+                this.$message.success('已复制到剪贴板');
+            },
+
+            preview() {
+                if (!this.outputText) {
+                    this.$message.warning('请先进行转换');
+                    return;
+                }
+                this.previewLines = this.outputText.split(this.separator);
+                this.previewVisible = true;
+            },
+
+                reset() {
+                    this.inputText = '';
+                    this.outputText = '';
+                    this.separator = ',';
+                    this.prefix = '';
+                    this.suffix = '';
+                    this.trimSpace = true;
+                    this.removeEmpty = true;
+                    this.addQuotes = false;
+                    this.$message.info('已重置');
+                },
+
+                setPrefix(val) {
+                    this.prefix = val;
+                },
+
+                setSuffix(val) {
+                    this.suffix = val;
+                }
+            }
+    })
+</script>
+</html>

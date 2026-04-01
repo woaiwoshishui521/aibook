@@ -42,6 +42,9 @@ urlpatterns = [
     # OSS file storage
     path('storage/', include('apps.storage.urls')),
 
+    # Tools - Text Converter
+    path('tools/text/', TemplateView.as_view(template_name='tools/text-converter.html'), name='text-converter'),
+
     # Prometheus metrics
     path('metrics/', include('django_prometheus.urls')),
 ]
