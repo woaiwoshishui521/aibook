@@ -45,6 +45,9 @@ urlpatterns = [
     # Tools - Text Converter
     path('tools/text/', lambda request: __import__('django').shortcuts.redirect('/static/tools/text-converter.html')),
 
+    # Tools - Timestamp Converter
+    path('tools/timestamp/', lambda request: __import__('django').shortcuts.redirect('/static/tools/timestamp.html')),
+
     # Prometheus metrics
     path('metrics/', include('django_prometheus.urls')),
 ]

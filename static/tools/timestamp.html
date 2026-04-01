@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>时间戳转换工具 - Aibook</title>
+    <link rel="stylesheet" href="/static/vendor/element-ui.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .back-link {
+            display: inline-block;
+            color: rgba(255, 255, 255, 0.8);
+            text-decoration: none;
+            font-size: 14px;
+            margin-bottom: 16px;
+            transition: color 0.2s;
+        }
+
+        .back-link:hover {
+            color: #fff;
+        }
+
+        .page-header {
+            text-align: center;
+            color: white;
+            margin-bottom: 28px;
+        }
+
+        .page-header h1 {
+            font-size: 2.2em;
+            font-weight: 700;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+        }
+
+        .page-header p {
+            font-size: 1em;
+            opacity: 0.75;
+        }
+
+        #app {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .main-card {
+            background: #fff;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+            margin-bottom: 24px;
+        }
+
+        .card-header {
+            background: linear-gradient(90deg, #0f3460, #533483);
+            padding: 18px 24px;
+            color: white;
+            font-size: 1.1em;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .card-body {
+            padding: 24px;
+        }
+
+        .section-label {
+            font-size: 0.95em;
+            font-weight: 600;
+            color: #303133;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .option-row {
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+
+        .option-item {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .time-type-tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+
+        .time-type-tab {
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 0.9em;
+            cursor: pointer;
+            border: 1px solid #dcdfe6;
+            background: #fff;
+            color: #606266;
+            transition: all 0.2s;
+        }
+
+        .time-type-tab.active {
+            background: #409EFF;
+            color: white;
+            border-color: #409EFF;
+        }
+
+        .time-type-tab:hover:not(.active) {
+            border-color: #409EFF;
+            color: #409EFF;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 12px;
+            align-items: flex-start;
+            margin-bottom: 20px;
+        }
+
+        .input-group .el-input {
+            flex: 1;
+        }
+
+        .result-card {
+            background: #f5f7fa;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border: 1px solid #ebeef5;
+        }
+
+        .result-item {
+            margin-bottom: 16px;
+        }
+
+        .result-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .result-label {
+            font-size: 0.85em;
+            color: #909399;
+            margin-bottom: 6px;
+        }
+
+        .result-value {
+            font-size: 1em;
+            color: #303133;
+            font-family: 'Monaco', 'Menlo', monospace;
+            word-break: break-all;
+        }
+
+        .result-value.highlight {
+            color: #409EFF;
+            font-weight: 600;
+        }
+
+        .btn-copy {
+            margin-left: 8px;
+            cursor: pointer;
+            color: #409EFF;
+        }
+
+        .current-time-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 12px;
+            padding: 20px;
+            color: white;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .current-time-value {
+            font-size: 2em;
+            font-weight: 700;
+            font-family: 'Monaco', monospace;
+            margin-bottom: 8px;
+        }
+
+        .current-time-label {
+            font-size: 0.9em;
+            opacity: 0.8;
+        }
+
+        .refresh-btn {
+            margin-top: 12px;
+        }
+
+        .quick-actions {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-top: 8px;
+        }
+
+        .quick-btn {
+            padding: 4px 12px;
+            background: #ecf5ff;
+            color: #409EFF;
+            border-radius: 12px;
+            font-size: 0.8em;
+            cursor: pointer;
+            border: 1px solid #b3d8ff;
+            transition: all 0.2s;
+        }
+
+        .quick-btn:hover {
+            background: #409EFF;
+            color: white;
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 12px;
+            }
+
+            .page-header h1 {
+                font-size: 1.6em;
+            }
+
+            .card-body {
+                padding: 16px;
+            }
+
+            .option-row {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <a href="/" class="back-link">← 返回项目管理后台</a>
+    <div class="page-header">
+        <h1>⏰ 时间戳转换工具</h1>
+        <p>时间戳与时间格式互转，支持多种时区和格式</p>
+    </div>
+    <div id="app">
+        <!-- 当前时间 -->
+        <div class="current-time-card">
+            <div class="current-time-value">{{ currentTimestamp }}</div>
+            <div class="current-time-label">当前时间戳 (秒)</div>
+            <el-button class="refresh-btn" size="small" type="primary" plain @click="refreshCurrentTime">
+                刷新
+            </el-button>
+        </div>
+
+        <!-- 转换功能 -->
+        <div class="main-card">
+            <div class="card-header">
+                <span>🔄</span> 时间戳转换
+            </div>
+            <div class="card-body">
+                <!-- 转换类型 -->
+                <div class="time-type-tabs">
+                    <div class="time-type-tab" :class="{ active: convertType === 'toTime' }" @click="convertType = 'toTime'">
+                        时间戳 → 时间
+                    </div>
+                    <div class="time-type-tab" :class="{ active: convertType === 'toTimestamp' }" @click="convertType = 'toTimestamp'">
+                        时间 → 时间戳
+                    </div>
+                    <div class="time-type-tab" :class="{ active: convertType === 'diff' }" @click="convertType = 'diff'">
+                        时间差计算
+                    </div>
+                </div>
+
+                <!-- 时间戳转时间 -->
+                <div v-if="convertType === 'toTime'">
+                    <div class="section-label">输入时间戳</div>
+                    <div class="input-group">
+                        <el-input v-model="inputTimestamp" placeholder="请输入时间戳（秒/毫秒）" clearable></el-input>
+                        <el-button type="primary" @click="convertToTime">转换</el-button>
+                    </div>
+                    <div class="quick-actions">
+                        <span class="quick-btn" @click="inputTimestamp = currentTimestamp">当前时间戳</span>
+                        <span class="quick-btn" @click="inputTimestamp = Math.floor(Date.now() / 1000)">秒级</span>
+                        <span class="quick-btn" @click="inputTimestamp = Date.now()">毫秒级</span>
+                    </div>
+                </div>
+
+                <!-- 时间转时间戳 -->
+                <div v-if="convertType === 'toTimestamp'">
+                    <div class="section-label">输入时间</div>
+                    <div class="option-row">
+                        <div class="option-item">
+                            <el-date-picker v-model="inputDateTime" type="datetime" placeholder="选择日期时间" style="width:100%;">
+                            </el-date-picker>
+                        </div>
+                        <div class="option-item">
+                            <el-select v-model="inputTimeUnit" style="width:100%;">
+                                <el-option label="秒 (秒级时间戳)" value="s"></el-option>
+                                <el-option label="毫秒 (毫秒级时间戳)" value="ms"></el-option>
+                            </el-select>
+                        </div>
+                    </div>
+                    <el-button type="primary" @click="convertToTimestamp">转换为时间戳</el-button>
+                </div>
+
+                <!-- 时间差计算 -->
+                <div v-if="convertType === 'diff'">
+                    <div class="section-label">计算两个时间之间的时间差</div>
+                    <div class="option-row">
+                        <div class="option-item">
+                            <el-date-picker v-model="diffStartTime" type="datetime" placeholder="开始时间" style="width:100%;">
+                            </el-date-picker>
+                        </div>
+                        <div class="option-item">
+                            <el-date-picker v-model="diffEndTime" type="datetime" placeholder="结束时间" style="width:100%;">
+                            </el-date-picker>
+                        </div>
+                    </div>
+                    <el-button type="primary" @click="calculateDiff">计算时间差</el-button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 转换结果 -->
+        <div class="main-card" v-if="resultTime || resultTimestamp || resultDiff">
+            <div class="card-header">
+                <span>📋</span> 转换结果
+            </div>
+            <div class="card-body">
+                <!-- 时间戳转时间的结果 -->
+                <div v-if="resultTime" class="result-card">
+                    <div class="result-item">
+                        <div class="result-label">本地时间</div>
+                        <div class="result-value highlight">{{ resultTime.local }}</div>
+                    </div>
+                    <div class="result-item">
+                        <div class="result-label">UTC 时间</div>
+                        <div class="result-value">{{ resultTime.utc }}</div>
+                    </div>
+                    <div class="result-item">
+                        <div class="result-label">ISO 8601 格式</div>
+                        <div class="result-value">{{ resultTime.iso }}</div>
+                    </div>
+                    <div class="result-item">
+                        <div class="result-label">相对时间</div>
+                        <div class="result-value">{{ resultTime.relative }}</div>
+                    </div>
+                </div>
+
+                <!-- 时间转时间戳的结果 -->
+                <div v-if="resultTimestamp" class="result-card">
+                    <div class="result-item">
+                        <div class="result-label">秒级时间戳</div>
+                        <div class="result-value highlight">
+                            {{ resultTimestamp.seconds }}
+                            <span class="btn-copy" @click="copyText(resultTimestamp.seconds)">📋 复制</span>
+                        </div>
+                    </div>
+                    <div class="result-item">
+                        <div class="result-label">毫秒级时间戳</div>
+                        <div class="result-value">
+                            {{ resultTimestamp.milliseconds }}
+                            <span class="btn-copy" @click="copyText(resultTimestamp.milliseconds)">📋 复制</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 时间差结果 -->
+                <div v-if="resultDiff" class="result-card">
+                    <div class="result-item">
+                        <div class="result-label">相差天数</div>
+                        <div class="result-value highlight">{{ resultDiff.days }} 天</div>
+                    </div>
+                    <div class="result-item">
+                        <div class="result-label">相差时间</div>
+                        <div class="result-value">{{ resultDiff.hours }}</div>
+                    </div>
+                    <div class="result-item">
+                        <div class="result-label">总秒数</div>
+                        <div class="result-value">{{ resultDiff.totalSeconds }} 秒</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 常用时间格式参考 -->
+        <div class="main-card">
+            <div class="card-header">
+                <span>📚</span> 常用时间格式
+            </div>
+            <div class="card-body">
+                <div class="result-card">
+                    <div class="result-item">
+                        <div class="result-label">Unix 时间戳 (秒)</div>
+                        <div class="result-value">{{ currentTimestamp }}</div>
+                    </div>
+                    <div class="result-item">
+                        <div class="result-label">Unix 时间戳 (毫秒)</div>
+                        <div class="result-value">{{ currentTimestampMs }}</div>
+                    </div>
+                    <div class="result-item">
+                        <div class="result-label">ISO 8601</div>
+                        <div class="result-value">{{ currentIso }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="/static/vendor/vue.min.js"></script>
+    <script src="/static/vendor/element-ui.umd.js"></script>
+    <script>
+        if (typeof ELEMENT !== 'undefined') {
+            Vue.use(ELEMENT);
+        }
+        new Vue({
+            el: '#app',
+            data() {
+                return {
+                    currentTimestamp: Math.floor(Date.now() / 1000),
+                    convertType: 'toTime',
+                    inputTimestamp: '',
+                    inputDateTime: null,
+                    inputTimeUnit: 's',
+                    diffStartTime: null,
+                    diffEndTime: null,
+                    resultTime: null,
+                    resultTimestamp: null,
+                    resultDiff: null
+                };
+            },
+            computed: {
+                currentTimestampMs() {
+                    return Date.now();
+                },
+                currentIso() {
+                    return new Date().toISOString();
+                }
+            },
+            methods: {
+                refreshCurrentTime() {
+                    this.currentTimestamp = Math.floor(Date.now() / 1000);
+                },
+
+                convertToTime() {
+                    if (!this.inputTimestamp) {
+                        this.$message.warning('请输入时间戳');
+                        return;
+                    }
+                    let ts = parseInt(this.inputTimestamp);
+                    if (isNaN(ts)) {
+                        this.$message.error('请输入有效的时间戳');
+                        return;
+                    }
+                    // 如果是毫秒级时间戳（13位），转换为秒级
+                    if (ts > 1000000000000) {
+                        ts = Math.floor(ts / 1000);
+                    }
+                    const date = new Date(ts * 1000);
+                    const local = this.formatLocalDateTime(date);
+                    const utc = this.formatUtcDateTime(date);
+                    const iso = date.toISOString();
+                    const relative = this.getRelativeTime(ts);
+                    this.resultTime = { local, utc, iso, relative };
+                    this.$message.success('转换成功');
+                },
+
+                convertToTimestamp() {
+                    if (!this.inputDateTime) {
+                        this.$message.warning('请选择日期时间');
+                        return;
+                    }
+                    const ms = this.inputDateTime.getTime();
+                    const seconds = Math.floor(ms / 1000);
+                    const milliseconds = ms;
+                    this.resultTimestamp = { seconds: seconds.toString(), milliseconds: milliseconds.toString() };
+                    this.$message.success('转换成功');
+                },
+
+                calculateDiff() {
+                    if (!this.diffStartTime || !this.diffEndTime) {
+                        this.$message.warning('请选择开始和结束时间');
+                        return;
+                    }
+                    const start = this.diffStartTime.getTime();
+                    const end = this.diffEndTime.getTime();
+                    const diffMs = Math.abs(end - start);
+                    const diffSeconds = Math.floor(diffMs / 1000);
+                    const days = Math.floor(diffSeconds / 86400);
+                    const hours = Math.floor((diffSeconds % 86400) / 3600);
+                    const minutes = Math.floor((diffSeconds % 3600) / 60);
+                    const seconds = diffSeconds % 60;
+                    this.resultDiff = {
+                        days: days,
+                        hours: `${days}天 ${hours}小时 ${minutes}分 ${seconds}秒`,
+                        totalSeconds: diffSeconds.toString()
+                    };
+                    this.$message.success('计算完成');
+                },
+
+                formatLocalDateTime(date) {
+                    const y = date.getFullYear();
+                    const m = String(date.getMonth() + 1).padStart(2, '0');
+                    const d = String(date.getDate()).padStart(2, '0');
+                    const h = String(date.getHours()).padStart(2, '0');
+                    const min = String(date.getMinutes()).padStart(2, '0');
+                    const s = String(date.getSeconds()).padStart(2, '0');
+                    return `${y}-${m}-${d} ${h}:${min}:${s}`;
+                },
+
+                formatUtcDateTime(date) {
+                    return date.toUTCString();
+                },
+
+                getRelativeTime(timestamp) {
+                    const now = Math.floor(Date.now() / 1000);
+                    const diff = now - timestamp;
+                    if (diff < 0) {
+                        return '未来';
+                    }
+                    if (diff < 60) {
+                        return diff + ' 秒前';
+                    }
+                    if (diff < 3600) {
+                        return Math.floor(diff / 60) + ' 分钟前';
+                    }
+                    if (diff < 86400) {
+                        return Math.floor(diff / 3600) + ' 小时前';
+                    }
+                    if (diff < 2592000) {
+                        return Math.floor(diff / 86400) + ' 天前';
+                    }
+                    if (diff < 31536000) {
+                        return Math.floor(diff / 2592000) + ' 个月前';
+                    }
+                    return Math.floor(diff / 31536000) + ' 年前';
+                },
+
+                copyText(text) {
+                    try {
+                        navigator.clipboard.writeText(text).then(() => {
+                            this.$message.success('已复制到剪贴板');
+                        });
+                    } catch (e) {
+                        const textarea = document.createElement('textarea');
+                        textarea.value = text;
+                        document.body.appendChild(textarea);
+                        textarea.select();
+                        document.execCommand('copy');
+                        document.body.removeChild(textarea);
+                        this.$message.success('已复制到剪贴板');
+                    }
+                }
+            },
+            mounted() {
+                setInterval(() => {
+                    this.refreshCurrentTime();
+                }, 1000);
+            }
+        });
+    </script>
+</body>
+</html>
