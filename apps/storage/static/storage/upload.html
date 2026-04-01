@@ -542,12 +542,14 @@
                         </template>
                     </el-table-column>
 
-                    <el-table-column label="操作" width="200" align="center" fixed="right">
+                    <el-table-column label="操作" width="280" align="center" fixed="right">
                         <template slot-scope="{ row }">
                             <el-button v-if="row.status === 'completed'" size="mini" type="primary" plain
                                 icon="el-icon-view" @click="previewFile(row)">预览</el-button>
                             <el-button v-if="row.status === 'completed'" size="mini" type="success" plain
                                 icon="el-icon-download" @click="downloadFile(row)">下载</el-button>
+                            <el-button v-if="row.status === 'completed'" size="mini" type="info" plain
+                                icon="el-icon-document-copy" @click="copyUrl(row)">复制地址</el-button>
                             <el-button size="mini" type="danger" plain icon="el-icon-delete"
                                 @click="deleteFile(row)">删除</el-button>
                         </template>
@@ -895,6 +897,32 @@
                     } catch (e) { /* fallback */ }
                     const a = document.createElement('a');
                     a.href = url; a.download = row.original_name; a.target = '_blank'; a.click();
+                },
+
+                // ---- 复制地址 ----
+                async copyUrl(row) {
+                    if (!row) return;
+                    let url = row.oss_url;
+                    try {
+                        const resp = await fetch(API_BASE + '/' + row.id + '/presigned_url/?expires=3600',
+                            { credentials: 'include' });
+                        if (resp.ok) { const d = await resp.json(); url = d.url; }
+                    } catch (e) { /* fallback */ }
+                    try {
+                        await navigator.clipboard.writeText(url);
+                        this.$message.success('地址已复制到剪贴板');
+                    } catch (e) {
+                        // 降级方案
+                        const textarea = document.createElement('textarea');
+                        textarea.value = url;
+                        textarea.style.position = 'fixed';
+                        textarea.style.opacity = '0';
+                        document.body.appendChild(textarea);
+                        textarea.select();
+                        document.execCommand('copy');
+                        document.body.removeChild(textarea);
+                        this.$message.success('地址已复制到剪贴板');
+                    }
                 },
 
                 // ---- 工具 ----
