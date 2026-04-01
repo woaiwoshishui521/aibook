@@ -483,17 +483,17 @@
             <!-- 筛选栏 -->
             <div class="filter-bar">
                 <el-input v-model="searchKeyword" placeholder="搜索文件名..." prefix-icon="el-icon-search" clearable
-                    style="width:220px;" />
+                    style="width:220px;"></el-input>
                 <el-select v-model="filterType" placeholder="文件类型" clearable style="width:130px;">
                     <el-option v-for="t in fileTypeOptions.slice(1)" :key="t.value" :label="t.icon + ' ' + t.label"
                         :value="t.value" />
                 </el-select>
                 <el-select v-model="filterStatus" placeholder="状态" clearable style="width:110px;">
-                    <el-option label="✅ 已完成" value="completed" />
-                    <el-option label="⏳ 上传中" value="uploading" />
-                    <el-option label="❌ 失败" value="failed" />
+                    <el-option label="✅ 已完成" value="completed"></el-option>
+                    <el-option label="⏳ 上传中" value="uploading"></el-option>
+                    <el-option label="❌ 失败" value="failed"></el-option>
                 </el-select>
-                <el-button icon="el-icon-refresh" circle @click="loadFiles" :loading="loadingFiles" />
+                <el-button icon="el-icon-refresh" circle @click="loadFiles" :loading="loadingFiles"></el-button>
             </div>
 
             <!-- 表格 -->
@@ -575,7 +575,7 @@
             <div class="upload-progress-box">
                 <div class="upload-progress-title">⬆️ 正在上传文件...</div>
                 <div class="upload-progress-file">{{ uploadingFileName }}</div>
-                <el-progress :percentage="uploadProgress" :stroke-width="10" />
+                <el-progress :percentage="uploadProgress" :stroke-width="10"></el-progress>
                 <div class="upload-progress-count">
                     {{ uploadingIndex }} / {{ pendingFiles.length }} 个文件
                 </div>
