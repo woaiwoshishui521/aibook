@@ -43,7 +43,7 @@ urlpatterns = [
     path('storage/', include('apps.storage.urls')),
 
     # Tools - Text Converter
-    path('tools/text/', TemplateView.as_view(template_name='tools/text-converter.html'), name='text-converter'),
+    path('tools/text/', lambda request: __import__('django').shortcuts.redirect('/static/tools/text-converter.html')),
 
     # Prometheus metrics
     path('metrics/', include('django_prometheus.urls')),

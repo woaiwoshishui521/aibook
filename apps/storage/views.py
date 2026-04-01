@@ -8,6 +8,7 @@ from rest_framework.permissions import AllowAny
 from rest_framework.parsers import MultiPartParser, FormParser
 from django.conf import settings
 from django.http import HttpResponse
+from django.shortcuts import render
 
 from apps.storage.models import OSSFile
 from apps.storage.serializers import OSSFileSerializer, OSSFileUploadSerializer
@@ -183,9 +184,8 @@ def _format_size(size: int) -> str:
 
 
 def oss_upload_page(request):
-    """OSS文件上传页面 —— 直接返回纯静态 HTML，不经过 Django 模板引擎"""
-    html_path = Path(__file__).parent / 'static' / 'storage' / 'upload.html'
-    html = html_path.read_text(encoding='utf-8')
-    return HttpResponse(html, content_type='text/html; charset=utf-8')
+    """OSS文件上传页面 —— 重定向到静态 HTML 页面"""
+    from django.shortcuts import redirect
+    return redirect('/static/storage/upload.html')
 
 
