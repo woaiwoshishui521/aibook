@@ -1,11 +1,10 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>OSS 文件存储</title>
-    <link rel="stylesheet" href="/static/storage/vendor/element-ui.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
     <style>
         * {
             margin: 0;
@@ -371,14 +370,271 @@
             }
         }
     </style>
-    <script src="/static/storage/vendor/vue.min.js"></script>
-    <script src="/static/storage/vendor/element-ui.min.js"></script>
-    <script>
+</head>
+<body>
+    <a href="/" class="back-link">← 返回项目管理后台</a>
+    <div class="page-header">
+        <h1>☁️ OSS 文件存储</h1>
+        <p>支持文档、视频、图片、音频，文件直传阿里云 OSS</p>
+    </div>
+    <div id="app">
+        <!-- 统计卡片 -->
+        <el-row :gutter="16" class="stat-row">
+            <el-col :xs="12" :sm="6">
+                <div class="stat-card">
+                    <div class="stat-value">{{ stats.total }}</div>
+                    <div class="stat-label">总文件数</div>
+                </div>
+            </el-col>
+            <el-col :xs="12" :sm="6">
+                <div class="stat-card">
+                    <div class="stat-value" style="color:#67c23a">{{ stats.completed }}</div>
+                    <div class="stat-label">已上传</div>
+                </div>
+            </el-col>
+            <el-col :xs="12" :sm="6">
+                <div class="stat-card">
+                    <div class="stat-value" style="color:#e6a23c">{{ stats.uploading }}</div>
+                    <div class="stat-label">上传中</div>
+                </div>
+            </el-col>
+            <el-col :xs="12" :sm="6">
+                <div class="stat-card">
+                    <div class="stat-value">{{ stats.total_size_display || '0 B' }}</div>
+                    <div class="stat-label">总存储量</div>
+                </div>
+            </el-col>
+        </el-row>
+
+        <!-- 上传区域 -->
+        <div class="main-card">
+            <div class="card-header">
+                <span>📤</span> 上传文件
+            </div>
+            <div class="card-body">
+
+                <!-- 文件类型筛选 -->
+                <div class="type-tabs">
+                    <div v-for="t in fileTypeOptions" :key="t.value" class="type-tab"
+                        :class="{ active: uploadFilter === t.value }" @click="uploadFilter = t.value">
+                        <span>{{ t.icon }}</span>{{ t.label }}
+                    </div>
+                </div>
+
+                <!-- 拖拽上传区 -->
+                <div class="upload-dragger" :class="{ dragover: isDragover }" @click="triggerFileInput"
+                    @dragover.prevent="isDragover = true" @dragleave.prevent="isDragover = false"
+                    @drop.prevent="handleDrop">
+                    <div class="upload-icon">{{ currentTypeIcon }}</div>
+                    <div style="font-size:1.05em;color:#303133;font-weight:500;">
+                        点击选择文件 或 拖拽到此处
+                    </div>
+                    <div class="upload-tip">
+                        支持 <span>{{ currentAcceptLabel }}</span>，单文件最大 <span>2 GB</span>，可批量上传
+                    </div>
+                    <input ref="fileInputRef" type="file" :accept="currentAccept" multiple style="display:none"
+                        @change="handleFileInputChange">
+                </div>
+
+                <!-- 待上传文件列表 -->
+                <div class="pending-file-list" v-if="pendingFiles.length > 0">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+                        <span style="font-weight:600;color:#303133;">
+                            已选择 {{ pendingFiles.length }} 个文件
+                            <span style="color:#909399;font-weight:400;font-size:0.9em;">
+                                （共 {{ formatSize(pendingTotalSize) }}）
+                            </span>
+                        </span>
+                        <el-button size="mini" type="text" @click="pendingFiles = []">清空</el-button>
+                    </div>
+                    <div class="pending-file-item" v-for="(f, idx) in pendingFiles" :key="idx">
+                        <div class="pending-file-icon">{{ getFileIcon(f.name, f.type) }}</div>
+                        <div class="pending-file-info">
+                            <div class="pending-file-name">{{ f.name }}</div>
+                            <div class="pending-file-meta">{{ formatSize(f.size) }} · {{ f.type || '未知类型' }}</div>
+                        </div>
+                        <div class="pending-file-remove" @click="removePendingFile(idx)">×</div>
+                    </div>
+                </div>
+
+                <!-- 描述 + 提交 -->
+                <div style="margin-top:20px;display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap;">
+                    <el-input v-model="uploadDescription" placeholder="文件描述（可选）" style="flex:1;min-width:200px;"
+                        clearable />
+                    <el-button type="primary" icon="el-icon-upload" :disabled="pendingFiles.length === 0"
+                        :loading="uploading" @click="startUpload" style="min-width:120px;">
+                        {{ uploading ? '上传中...' : '开始上传' }}
+                    </el-button>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- 文件列表 -->
+        <div class="files-card">
+            <div class="card-header">
+                <span>📁</span> 文件列表
+                <span style="margin-left:auto;font-size:0.85em;opacity:0.8;font-weight:400;">
+                    共 {{ filteredFiles.length }} 个文件
+                </span>
+            </div>
+
+            <!-- 筛选栏 -->
+            <div class="filter-bar">
+                <el-input v-model="searchKeyword" placeholder="搜索文件名..." prefix-icon="el-icon-search" clearable
+                    style="width:220px;" />
+                <el-select v-model="filterType" placeholder="文件类型" clearable style="width:130px;">
+                    <el-option v-for="t in fileTypeOptions.slice(1)" :key="t.value" :label="t.icon + ' ' + t.label"
+                        :value="t.value" />
+                </el-select>
+                <el-select v-model="filterStatus" placeholder="状态" clearable style="width:110px;">
+                    <el-option label="✅ 已完成" value="completed" />
+                    <el-option label="⏳ 上传中" value="uploading" />
+                    <el-option label="❌ 失败" value="failed" />
+                </el-select>
+                <el-button icon="el-icon-refresh" circle @click="loadFiles" :loading="loadingFiles" />
+            </div>
+
+            <!-- 表格 -->
+            <div v-if="filteredFiles.length > 0">
+                <el-table :data="pagedFiles" style="width:100%" stripe>
+
+                    <el-table-column label="" width="52" align="center">
+                        <template slot-scope="{ row }">
+                            <span class="file-icon-cell">{{ getFileIcon(row.original_name, row.mime_type) }}</span>
+                        </template>
+                    </el-table-column>
+
+                    <el-table-column label="文件名" min-width="200" show-overflow-tooltip>
+                        <template slot-scope="{ row }">
+                            <div class="file-name-text">{{ row.original_name }}</div>
+                            <div class="file-name-sub">{{ row.description || '无描述' }}</div>
+                        </template>
+                    </el-table-column>
+
+                    <el-table-column label="类型" width="90" align="center">
+                        <template slot-scope="{ row }">
+                            <el-tag size="mini" :type="typeTagMap[row.file_type] || 'info'">
+                                {{ row.file_type_display }}
+                            </el-tag>
+                        </template>
+                    </el-table-column>
+
+                    <el-table-column label="大小" width="100" align="right">
+                        <template slot-scope="{ row }">
+                            <span style="color:#606266;font-size:0.88em;">{{ row.file_size_display }}</span>
+                        </template>
+                    </el-table-column>
+
+                    <el-table-column label="状态" width="100" align="center">
+                        <template slot-scope="{ row }">
+                            <span class="status-tag" :class="'status-' + row.status">
+                                <span>{{ statusIconMap[row.status] }}</span>
+                                {{ row.status_display }}
+                            </span>
+                        </template>
+                    </el-table-column>
+
+                    <el-table-column label="上传时间" width="150" align="center">
+                        <template slot-scope="{ row }">
+                            <span style="font-size:0.85em;color:#909399;">{{ formatDateTime(row.created_at) }}</span>
+                        </template>
+                    </el-table-column>
+
+                    <el-table-column label="操作" width="200" align="center" fixed="right">
+                        <template slot-scope="{ row }">
+                            <el-button v-if="row.status === 'completed'" size="mini" type="primary" plain
+                                icon="el-icon-view" @click="previewFile(row)">预览</el-button>
+                            <el-button v-if="row.status === 'completed'" size="mini" type="success" plain
+                                icon="el-icon-download" @click="downloadFile(row)">下载</el-button>
+                            <el-button size="mini" type="danger" plain icon="el-icon-delete"
+                                @click="deleteFile(row)">删除</el-button>
+                        </template>
+                    </el-table-column>
+                </el-table>
+
+                <!-- 分页 -->
+                <div style="padding:16px 24px;display:flex;justify-content:flex-end;">
+                    <el-pagination background layout="total, sizes, prev, pager, next" :total="filteredFiles.length"
+                        :page-sizes="[10, 20, 50]" :page-size="pageSize" :current-page.sync="currentPage"
+                        @size-change="val => { pageSize = val; currentPage = 1; }"
+                        @current-change="val => currentPage = val" />
+                </div>
+            </div>
+
+            <!-- 空状态 -->
+            <div class="empty-state" v-else>
+                <div class="empty-icon">📭</div>
+                <p>暂无文件{{ searchKeyword || filterType || filterStatus ? '（当前筛选条件下）' : '' }}</p>
+            </div>
+        </div>
+
+        <!-- 上传进度遮罩 -->
+        <div class="upload-progress-overlay" v-if="uploading">
+            <div class="upload-progress-box">
+                <div class="upload-progress-title">⬆️ 正在上传文件...</div>
+                <div class="upload-progress-file">{{ uploadingFileName }}</div>
+                <el-progress :percentage="uploadProgress" :stroke-width="10" />
+                <div class="upload-progress-count">
+                    {{ uploadingIndex }} / {{ pendingFiles.length }} 个文件
+                </div>
+            </div>
+        </div>
+
+        <!-- 预览对话框 -->
+        <el-dialog :title="previewTitle" :visible.sync="previewVisible" width="80%" top="5vh"
+            :before-close="closePreview" append-to-body>
+            <div style="text-align:center;min-height:200px;">
+                <!-- 图片 -->
+                <img v-if="previewType === 'image'" :src="previewUrl"
+                    style="max-width:100%;max-height:70vh;border-radius:8px;object-fit:contain;"
+                    @error="previewLoadError = true" />
+
+                <!-- 视频 -->
+                <video v-else-if="previewType === 'video'" :src="previewUrl" controls
+                    style="max-width:100%;max-height:70vh;border-radius:8px;" @error="previewLoadError = true">
+                    您的浏览器不支持视频播放
+                </video>
+
+                <!-- 音频 -->
+                <div v-else-if="previewType === 'audio'" style="padding:40px 0;">
+                    <div style="font-size:4em;margin-bottom:20px;">🎵</div>
+                    <audio :src="previewUrl" controls style="width:100%;max-width:500px;"
+                        @error="previewLoadError = true">
+                        您的浏览器不支持音频播放
+                    </audio>
+                </div>
+
+                <!-- 文档 -->
+                <div v-else-if="previewType === 'document'" style="padding:20px 0;">
+                    <iframe v-if="previewExt === 'pdf'" :src="previewUrl"
+                        style="width:100%;height:70vh;border:none;border-radius:8px;" />
+                    <div v-else style="padding:40px 0;">
+                        <div style="font-size:4em;margin-bottom:20px;">📄</div>
+                        <p style="color:#606266;margin-bottom:20px;">该文档格式暂不支持在线预览</p>
+                        <el-button type="primary" @click="downloadFile(currentPreviewRow)">下载查看</el-button>
+                    </div>
+                </div>
+
+                <!-- 加载错误 -->
+                <div v-if="previewLoadError" style="padding:40px 0;color:#f56c6c;">
+                    <div style="font-size:3em;margin-bottom:12px;">⚠️</div>
+                    <p>文件加载失败，可能链接已过期</p>
+                    <el-button style="margin-top:12px;" @click="refreshPreview">刷新链接</el-button>
+                </div>
+            </div>
+        </el-dialog>
+    </div>
+</body>
+<script src="https://unpkg.com/vue@2/dist/vue.js"></script>
+<!-- import JavaScript -->
+<script src="https://unpkg.com/element-ui/lib/index.js"></script>
+<script>
         Vue.use(ELEMENT);
         const API_BASE = '/storage/api/files';
         new Vue({
             el: '#app',
-            data() {
+            data: function () {
                 return {
                     // 上传
                     isDragover: false,
@@ -425,7 +681,6 @@
                     statusIconMap: { uploading: '⏳', completed: '✅', failed: '❌', deleted: '🗑️' },
                 };
             },
-
             computed: {
                 currentTypeOption() {
                     return this.fileTypeOptions.find(t => t.value === this.uploadFilter) || this.fileTypeOptions[0];
@@ -689,264 +944,4 @@
             },
         });
     </script>
-</head>
-<body>
-    <a href="/" class="back-link">← 返回项目管理后台</a>
-
-    <div class="page-header">
-        <h1>☁️ OSS 文件存储</h1>
-        <p>支持文档、视频、图片、音频，文件直传阿里云 OSS</p>
-    </div>
-
-    <div id="app">
-
-        <!-- 统计卡片 -->
-        <el-row :gutter="16" class="stat-row">
-            <el-col :xs="12" :sm="6">
-                <div class="stat-card">
-                    <div class="stat-value">{{ stats.total }}</div>
-                    <div class="stat-label">总文件数</div>
-                </div>
-            </el-col>
-            <el-col :xs="12" :sm="6">
-                <div class="stat-card">
-                    <div class="stat-value" style="color:#67c23a">{{ stats.completed }}</div>
-                    <div class="stat-label">已上传</div>
-                </div>
-            </el-col>
-            <el-col :xs="12" :sm="6">
-                <div class="stat-card">
-                    <div class="stat-value" style="color:#e6a23c">{{ stats.uploading }}</div>
-                    <div class="stat-label">上传中</div>
-                </div>
-            </el-col>
-            <el-col :xs="12" :sm="6">
-                <div class="stat-card">
-                    <div class="stat-value">{{ stats.total_size_display || '0 B' }}</div>
-                    <div class="stat-label">总存储量</div>
-                </div>
-            </el-col>
-        </el-row>
-
-        <!-- 上传区域 -->
-        <div class="main-card">
-            <div class="card-header">
-                <span>📤</span> 上传文件
-            </div>
-            <div class="card-body">
-
-                <!-- 文件类型筛选 -->
-                <div class="type-tabs">
-                    <div v-for="t in fileTypeOptions" :key="t.value" class="type-tab"
-                        :class="{ active: uploadFilter === t.value }" @click="uploadFilter = t.value">
-                        <span>{{ t.icon }}</span>{{ t.label }}
-                    </div>
-                </div>
-
-                <!-- 拖拽上传区 -->
-                <div class="upload-dragger" :class="{ dragover: isDragover }" @click="triggerFileInput"
-                    @dragover.prevent="isDragover = true" @dragleave.prevent="isDragover = false"
-                    @drop.prevent="handleDrop">
-                    <div class="upload-icon">{{ currentTypeIcon }}</div>
-                    <div style="font-size:1.05em;color:#303133;font-weight:500;">
-                        点击选择文件 或 拖拽到此处
-                    </div>
-                    <div class="upload-tip">
-                        支持 <span>{{ currentAcceptLabel }}</span>，单文件最大 <span>2 GB</span>，可批量上传
-                    </div>
-                    <input ref="fileInputRef" type="file" :accept="currentAccept" multiple style="display:none"
-                        @change="handleFileInputChange">
-                </div>
-
-                <!-- 待上传文件列表 -->
-                <div class="pending-file-list" v-if="pendingFiles.length > 0">
-                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
-                        <span style="font-weight:600;color:#303133;">
-                            已选择 {{ pendingFiles.length }} 个文件
-                            <span style="color:#909399;font-weight:400;font-size:0.9em;">
-                                （共 {{ formatSize(pendingTotalSize) }}）
-                            </span>
-                        </span>
-                        <el-button size="mini" type="text" @click="pendingFiles = []">清空</el-button>
-                    </div>
-                    <div class="pending-file-item" v-for="(f, idx) in pendingFiles" :key="idx">
-                        <div class="pending-file-icon">{{ getFileIcon(f.name, f.type) }}</div>
-                        <div class="pending-file-info">
-                            <div class="pending-file-name">{{ f.name }}</div>
-                            <div class="pending-file-meta">{{ formatSize(f.size) }} · {{ f.type || '未知类型' }}</div>
-                        </div>
-                        <div class="pending-file-remove" @click="removePendingFile(idx)">×</div>
-                    </div>
-                </div>
-
-                <!-- 描述 + 提交 -->
-                <div style="margin-top:20px;display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap;">
-                    <el-input v-model="uploadDescription" placeholder="文件描述（可选）" style="flex:1;min-width:200px;"
-                        clearable />
-                    <el-button type="primary" icon="el-icon-upload" :disabled="pendingFiles.length === 0"
-                        :loading="uploading" @click="startUpload" style="min-width:120px;">
-                        {{ uploading ? '上传中...' : '开始上传' }}
-                    </el-button>
-                </div>
-
-            </div>
-        </div>
-
-        <!-- 文件列表 -->
-        <div class="files-card">
-            <div class="card-header">
-                <span>📁</span> 文件列表
-                <span style="margin-left:auto;font-size:0.85em;opacity:0.8;font-weight:400;">
-                    共 {{ filteredFiles.length }} 个文件
-                </span>
-            </div>
-
-            <!-- 筛选栏 -->
-            <div class="filter-bar">
-                <el-input v-model="searchKeyword" placeholder="搜索文件名..." prefix-icon="el-icon-search" clearable
-                    style="width:220px;" />
-                <el-select v-model="filterType" placeholder="文件类型" clearable style="width:130px;">
-                    <el-option v-for="t in fileTypeOptions.slice(1)" :key="t.value" :label="t.icon + ' ' + t.label"
-                        :value="t.value" />
-                </el-select>
-                <el-select v-model="filterStatus" placeholder="状态" clearable style="width:110px;">
-                    <el-option label="✅ 已完成" value="completed" />
-                    <el-option label="⏳ 上传中" value="uploading" />
-                    <el-option label="❌ 失败" value="failed" />
-                </el-select>
-                <el-button icon="el-icon-refresh" circle @click="loadFiles" :loading="loadingFiles" />
-            </div>
-
-            <!-- 表格 -->
-            <div v-if="filteredFiles.length > 0">
-                <el-table :data="pagedFiles" style="width:100%" stripe>
-
-                    <el-table-column label="" width="52" align="center">
-                        <template slot-scope="{ row }">
-                            <span class="file-icon-cell">{{ getFileIcon(row.original_name, row.mime_type) }}</span>
-                        </template>
-                    </el-table-column>
-
-                    <el-table-column label="文件名" min-width="200" show-overflow-tooltip>
-                        <template slot-scope="{ row }">
-                            <div class="file-name-text">{{ row.original_name }}</div>
-                            <div class="file-name-sub">{{ row.description || '无描述' }}</div>
-                        </template>
-                    </el-table-column>
-
-                    <el-table-column label="类型" width="90" align="center">
-                        <template slot-scope="{ row }">
-                            <el-tag size="mini" :type="typeTagMap[row.file_type] || 'info'">
-                                {{ row.file_type_display }}
-                            </el-tag>
-                        </template>
-                    </el-table-column>
-
-                    <el-table-column label="大小" width="100" align="right">
-                        <template slot-scope="{ row }">
-                            <span style="color:#606266;font-size:0.88em;">{{ row.file_size_display }}</span>
-                        </template>
-                    </el-table-column>
-
-                    <el-table-column label="状态" width="100" align="center">
-                        <template slot-scope="{ row }">
-                            <span class="status-tag" :class="'status-' + row.status">
-                                <span>{{ statusIconMap[row.status] }}</span>
-                                {{ row.status_display }}
-                            </span>
-                        </template>
-                    </el-table-column>
-
-                    <el-table-column label="上传时间" width="150" align="center">
-                        <template slot-scope="{ row }">
-                            <span style="font-size:0.85em;color:#909399;">{{ formatDateTime(row.created_at) }}</span>
-                        </template>
-                    </el-table-column>
-
-                    <el-table-column label="操作" width="200" align="center" fixed="right">
-                        <template slot-scope="{ row }">
-                            <el-button v-if="row.status === 'completed'" size="mini" type="primary" plain
-                                icon="el-icon-view" @click="previewFile(row)">预览</el-button>
-                            <el-button v-if="row.status === 'completed'" size="mini" type="success" plain
-                                icon="el-icon-download" @click="downloadFile(row)">下载</el-button>
-                            <el-button size="mini" type="danger" plain icon="el-icon-delete"
-                                @click="deleteFile(row)">删除</el-button>
-                        </template>
-                    </el-table-column>
-                </el-table>
-
-                <!-- 分页 -->
-                <div style="padding:16px 24px;display:flex;justify-content:flex-end;">
-                    <el-pagination background layout="total, sizes, prev, pager, next" :total="filteredFiles.length"
-                        :page-sizes="[10, 20, 50]" :page-size="pageSize" :current-page.sync="currentPage"
-                        @size-change="val => { pageSize = val; currentPage = 1; }"
-                        @current-change="val => currentPage = val" />
-                </div>
-            </div>
-
-            <!-- 空状态 -->
-            <div class="empty-state" v-else>
-                <div class="empty-icon">📭</div>
-                <p>暂无文件{{ searchKeyword || filterType || filterStatus ? '（当前筛选条件下）' : '' }}</p>
-            </div>
-        </div>
-
-        <!-- 上传进度遮罩 -->
-        <div class="upload-progress-overlay" v-if="uploading">
-            <div class="upload-progress-box">
-                <div class="upload-progress-title">⬆️ 正在上传文件...</div>
-                <div class="upload-progress-file">{{ uploadingFileName }}</div>
-                <el-progress :percentage="uploadProgress" :stroke-width="10" />
-                <div class="upload-progress-count">
-                    {{ uploadingIndex }} / {{ pendingFiles.length }} 个文件
-                </div>
-            </div>
-        </div>
-
-        <!-- 预览对话框 -->
-        <el-dialog :title="previewTitle" :visible.sync="previewVisible" width="80%" top="5vh"
-            :before-close="closePreview" append-to-body>
-            <div style="text-align:center;min-height:200px;">
-                <!-- 图片 -->
-                <img v-if="previewType === 'image'" :src="previewUrl"
-                    style="max-width:100%;max-height:70vh;border-radius:8px;object-fit:contain;"
-                    @error="previewLoadError = true" />
-
-                <!-- 视频 -->
-                <video v-else-if="previewType === 'video'" :src="previewUrl" controls
-                    style="max-width:100%;max-height:70vh;border-radius:8px;" @error="previewLoadError = true">
-                    您的浏览器不支持视频播放
-                </video>
-
-                <!-- 音频 -->
-                <div v-else-if="previewType === 'audio'" style="padding:40px 0;">
-                    <div style="font-size:4em;margin-bottom:20px;">🎵</div>
-                    <audio :src="previewUrl" controls style="width:100%;max-width:500px;"
-                        @error="previewLoadError = true">
-                        您的浏览器不支持音频播放
-                    </audio>
-                </div>
-
-                <!-- 文档 -->
-                <div v-else-if="previewType === 'document'" style="padding:20px 0;">
-                    <iframe v-if="previewExt === 'pdf'" :src="previewUrl"
-                        style="width:100%;height:70vh;border:none;border-radius:8px;" />
-                    <div v-else style="padding:40px 0;">
-                        <div style="font-size:4em;margin-bottom:20px;">📄</div>
-                        <p style="color:#606266;margin-bottom:20px;">该文档格式暂不支持在线预览</p>
-                        <el-button type="primary" @click="downloadFile(currentPreviewRow)">下载查看</el-button>
-                    </div>
-                </div>
-
-                <!-- 加载错误 -->
-                <div v-if="previewLoadError" style="padding:40px 0;color:#f56c6c;">
-                    <div style="font-size:3em;margin-bottom:12px;">⚠️</div>
-                    <p>文件加载失败，可能链接已过期</p>
-                    <el-button style="margin-top:12px;" @click="refreshPreview">刷新链接</el-button>
-                </div>
-            </div>
-        </el-dialog>
-    </div>
-    
-</body>
 </html>
