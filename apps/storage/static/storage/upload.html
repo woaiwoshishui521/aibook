@@ -460,7 +460,8 @@
                 <!-- 描述 + 提交 -->
                 <div style="margin-top:20px;display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap;">
                     <el-input v-model="uploadDescription" placeholder="文件描述（可选）" style="flex:1;min-width:200px;"
-                        clearable />
+                        clearable >
+                    </el-input>
                     <el-button type="primary" icon="el-icon-upload" :disabled="pendingFiles.length === 0"
                         :loading="uploading" @click="startUpload" style="min-width:120px;">
                         {{ uploading ? '上传中...' : '开始上传' }}
